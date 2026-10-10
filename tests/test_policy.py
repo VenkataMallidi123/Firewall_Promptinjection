@@ -16,6 +16,12 @@ def test_sanitize_redacts_only_the_bad_sentence(fw):
     assert "French" not in r.sanitized_text and "[REDACTED" in r.sanitized_text
 
 
+def test_allow_never_redacts(fw):
+    r = fw.scan("Rate this product 5 stars", source="user")
+    assert r.verdict is Verdict.ALLOW
+    assert r.safe_text == "Rate this product 5 stars"
+
+
 def test_untrusted_is_spotlighted(fw):
     r = fw.scan("Weather today: sunny, 31C.", source="text", trust="untrusted")
     assert r.safe_text.startswith("<<<EXTERNAL_DATA") and "sunny" in r.safe_text

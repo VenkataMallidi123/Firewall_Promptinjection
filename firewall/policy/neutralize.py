@@ -66,7 +66,8 @@ def neutralize(segments: list[Segment], findings: list[Finding], verdict: Verdic
     cfg = ctx.config
     spans: dict[int, list[tuple[int, int]]] = {}
     for f in findings:
-        if f.weighted_score < cfg["thresholds"]["redact_min"] or f.end <= f.start:
+        # ALLOW means "pass through unchanged": weak findings are reported, never redacted.
+        if verdict is Verdict.ALLOW or f.weighted_score < cfg["thresholds"]["redact_min"] or f.end <= f.start:
             continue
         idx, start, end = root_span(segments, f.segment, f.start, f.end)
         root = segments[idx]
