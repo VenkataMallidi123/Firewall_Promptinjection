@@ -1,0 +1,26 @@
+# Pinned for Python 3.14 (resolved 2026-10-10)
+
+# --- core pipeline ---
+pydantic==2.14.0
+pyyaml==6.0.3
+
+# --- ingest: document / web / image parsers ---
+beautifulsoup4==4.15.0
+pypdf==6.20.0
+python-docx==1.2.0
+pillow==12.3.0
+pytesseract==0.3.13      # also needs the Tesseract binary on PATH (optional)
+
+# --- optional local ML detector ---
+numpy==2.5.3
+scikit-learn==1.9.1
+
+# --- REST API ---
+fastapi==0.143.0
+uvicorn==0.54.0
+python-multipart==0.0.32
+
+# --- dev: sample generation + tests ---
+reportlab==5.0.1
+pytest==9.1.1
+httpx==0.28.1
