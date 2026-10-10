@@ -12,11 +12,12 @@ python -m venv .venv
 .venv\Scripts\activate            # Windows  (source .venv/bin/activate on Linux/macOS)
 pip install -r requirements.txt
 
-python scripts/make_samples.py    # generate PDF/DOCX/EML/PNG/HTML/... test files
-python demo/agent/run_demo.py     # agent demo: same attacks WITHOUT vs WITH the firewall
-python scripts/evaluate.py        # reliability report (precision/recall/FPR per type and source)
-pytest                            # 97 tests
-uvicorn api.main:app --reload     # REST API on http://localhost:8000/docs
+python testing/samples/make_samples.py      # generate PDF/DOCX/EML/PNG/HTML/... test files
+python interfaces/agent_demo/run_demo.py    # agent demo: same attacks WITHOUT vs WITH the firewall
+python interfaces/demo_ui/server.py         # agent demo web UI on http://localhost:8001
+python testing/evaluation/evaluate.py       # reliability report (precision/recall/FPR per type and source)
+pytest                                      # 98 passing tests (1 skipped without Tesseract)
+uvicorn interfaces.rest_api.main:app --reload   # REST API on http://localhost:8000/docs
 ```
 
 Optional: install [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) and add it to PATH. Without it, the firewall still scans an image's metadata, but not the text drawn in its pixels.
@@ -27,7 +28,7 @@ Optional: install [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki)
 from firewall import Firewall, Session
 
 fw = Firewall()
-r = fw.scan_file("data/samples/attacks/report_white_text.pdf")       # retrieved data -> untrusted
+r = fw.scan_file("testing/samples/attacks/report_white_text.pdf")       # retrieved data -> untrusted
 print(r.summary())        # BLOCK risk=1.00 types=[instruction_override, secret_extraction, indirect_injection]
 for f in r.findings[:3]:
     print(f.rule_id, f.attack_type.value, f.weighted_score, r.segments[f.segment].location, f.evidence)
@@ -39,7 +40,7 @@ model_input = r.safe_text  # redacted + spotlighted text, or a block notice
 ## How it works
 
 ```
-input ─► 1 INGEST ─► 2 NORMALIZE/DECODE ─► 3 DETECT ─► 4 POLICY ─► 5 NEUTRALIZE ─► safe_text + verdict
+input ─► 1 INGESTION ─► 2 NORMALIZATION ─► 3 DETECTION ─► 4 DECISION ─► 5 ENFORCEMENT ─► safe_text + verdict
          per-format   unicode, homoglyph,   rules, ML,   trust x      redact, drop hidden,
          hidden-text  base64/rot13/hex...   session,     channel      spotlight, or block
          surfacing                          indirect     weighting
@@ -49,7 +50,7 @@ input ─► 1 INGEST ─► 2 NORMALIZE/DECODE ─► 3 DETECT ─► 4 POLICY 
 
 ## Results
 
-The full report is in [docs/EVALUATION.md](docs/EVALUATION.md); regenerate it with `python scripts/evaluate.py --write`.
+The full report is in [docs/EVALUATION.md](docs/EVALUATION.md); regenerate it with `python testing/evaluation/evaluate.py --write`.
 
 | Dataset | Attacks / benign | Precision | Recall | False-positive rate |
 |---|---|---|---|---|
@@ -63,7 +64,7 @@ Median scan latency is under 1 ms for text, and a few ms for documents.
 
 ## Agent demo
 
-[demo/agent/run_demo.py](demo/agent/run_demo.py) runs a deliberately gullible agent against seven scenarios: hidden email HTML, an invisible web-page div, white text in a PDF, a poisoned API response with base64, a DAN jailbreak, multi-turn payload splitting, and a benign email.
+[interfaces/agent_demo/run_demo.py](interfaces/agent_demo/run_demo.py) runs a deliberately gullible agent against seven scenarios: hidden email HTML, an invisible web-page div, white text in a PDF, a poisoned API response with base64, a DAN jailbreak, multi-turn payload splitting, and a benign email.
 
 - **Without the firewall**, the agent leaks its system prompt and secrets, emails the inbox to the attacker, and phishes the user (6 of 6 attack scenarios compromised).
 - **With the firewall**, all 6 are safe, and the benign email passes through unchanged.
@@ -71,11 +72,22 @@ Median scan latency is under 1 ms for text, and a few ms for documents.
 ## Layout
 
 ```
-firewall/          the library: ingest/ normalize/ detectors/ (rules/*.yaml) policy/ pipeline.py guard.py config.yaml
-api/main.py        FastAPI wrapper (POST /scan, POST /scan/file)
-demo/agent/        mock tools + naive agent + side-by-side runner
-data/              train.jsonl (ML), eval.jsonl (dev), holdout.jsonl (test), samples/ (generated files)
-scripts/           make_samples.py, evaluate.py
-tests/             pytest suite (attack types, benign, extractors, normalization, policy, API, demo)
-docs/              ARCHITECTURE.md, EVALUATION.md
+firewall/                 the product: the 5-stage pipeline
+  core/                   shared models, scan context, config.yaml
+  ingestion/      stage 1 parsers per format, hidden-content extraction
+  normalization/  stage 2 canonicalization and decoding
+  detection/      stage 3 rules/*.yaml, ML classifier (data/train.jsonl), session and indirect checks
+  decision/       stage 4 risk scoring and verdict
+  enforcement/    stage 5 redaction, isolation and spotlighting
+  pipeline.py             wires stages 1 → 5
+  guard.py                agent integration entry point
+interfaces/               how people use it
+  rest_api/               FastAPI wrapper (POST /scan, POST /scan/file)
+  agent_demo/             mock tools + naive agent + side-by-side runner
+  demo_ui/                web UI for the agent demo
+testing/                  how we prove it works
+  tests/                  pytest suite
+  evaluation/             evaluate.py + eval.jsonl (dev) + holdout.jsonl (test)
+  samples/                make_samples.py + generated attack/benign files
+docs/                     ARCHITECTURE.md, EVALUATION.md, hackathon deck
 ```

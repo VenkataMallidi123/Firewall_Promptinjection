@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .context import Session
-from .models import ScanResult, Source, Trust, Verdict
+from .core.context import Session
+from .core.models import ScanResult, Source, Trust, Verdict
 from .pipeline import Firewall
 
 

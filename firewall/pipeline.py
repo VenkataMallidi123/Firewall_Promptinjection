@@ -11,15 +11,16 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from .config import load_config
-from .context import ScanContext, Session
-from .detectors import (ContextPoisonDetector, Detector, EncodingDetector, IndirectDetector, MLDetector,
+from .core.config import load_config
+from .core.context import ScanContext, Session
+from .detection import (ContextPoisonDetector, Detector, EncodingDetector, IndirectDetector, MLDetector,
                         MultiStepDetector, RuleDetector)
-from .ingest import detect_source, extract
-from .ingest.base import as_text
-from .models import Channel, ScanResult, Segment, Source, Trust, Verdict
-from .normalize import expand_decoded, normalize_segments
-from .policy import neutralize, score_findings
+from .ingestion import detect_source, extract
+from .ingestion.base import as_text
+from .core.models import Channel, ScanResult, Segment, Source, Trust, Verdict
+from .normalization import expand_decoded, normalize_segments
+from .decision import score_findings
+from .enforcement import neutralize
 
 
 class Firewall:

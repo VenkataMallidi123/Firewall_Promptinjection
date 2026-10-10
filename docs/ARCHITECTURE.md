@@ -32,7 +32,7 @@ This firewall sits between an AI agent and **everything the agent reads**: user 
 
 The code follows the diagram directly: [firewall/pipeline.py](../firewall/pipeline.py) calls one package per stage.
 
-## Core data model ([firewall/models.py](../firewall/models.py))
+## Core data model ([firewall/core/models.py](../firewall/core/models.py))
 
 | Type | Meaning |
 |---|---|
@@ -43,7 +43,7 @@ The code follows the diagram directly: [firewall/pipeline.py](../firewall/pipeli
 | `Finding` | One piece of evidence: attack type, detector, rule id, raw and weighted score, span, and evidence snippet |
 | `ScanResult` | The verdict, the risk score, per-type scores, all findings and segments, `sanitized_text`, `safe_text`, warnings, and a trace |
 
-## Stage 1: Ingest ([firewall/ingest/](../firewall/ingest/))
+## Stage 1: Ingestion ([firewall/ingestion/](../firewall/ingestion/))
 
 Indirect prompt injection works because humans and models see different things. A reviewer sees a clean web page; the model also receives the `display:none` div. So each extractor's main job is to **separate what a human sees from what a machine sees**:
 
@@ -60,22 +60,22 @@ Indirect prompt injection works because humans and models see different things. 
 
 **Fail-safe:** if a parser throws, the raw bytes are still scanned as text, and a warning is recorded.
 
-## Stage 2: Normalize and decode ([firewall/normalize/](../firewall/normalize/))
+## Stage 2: Normalization ([firewall/normalization/](../firewall/normalization/))
 
 - `normalize()` returns the cleaned text the model will see, plus **obfuscation flags** (zero-width characters inside words, mixed-script words, tag-character smuggling).
 - `match_views()` returns **same-length** lower-cased, homoglyph-folded, and leet-folded copies of the text. Rules match against every view, and because the lengths are identical, spans line up exactly with the cleaned text.
 - `find_encoded()` turns base64, hex, URL-encoding, `\u` escapes, HTML entities, ROT13, reversed text, and s-p-a-c-e-d letters into **child segments**. These are scanned like any other text, and decoding recurses up to `decoders.max_depth`.
 
-## Stage 3: Detect ([firewall/detectors/](../firewall/detectors/))
+## Stage 3: Detection ([firewall/detection/](../firewall/detection/))
 
 Detectors run in order, and each one sees the findings of those before it:
 
 | Detector | Attack types | How it works |
 |---|---|---|
-| `rules` | 1–8 | Weighted regexes in [rules/*.yaml](../firewall/detectors/rules/), with one file per attack type. Two dampeners reduce false positives: **mention dampening** for quoted or "such as" examples, and **negation dampening** ("never share your password") |
+| `rules` | 1–8 | Weighted regexes in [rules/*.yaml](../firewall/detection/rules/), with one file per attack type. Two dampeners reduce false positives: **mention dampening** for quoted or "such as" examples, and **negation dampening** ("never share your password") |
 | `context_poison` | 6 | Forged multi-role transcripts ("User: … / Assistant: …") |
 | `multistep` | 7 | Uses `Session` history. Payload splitting: rules re-run over the joined turns, flagging matches that cross the turn boundary. Escalation after a role-play framing turn. Repeated probing. |
-| `ml` | any | Pure-Python logistic regression (P(attack)) plus Naive Bayes (attack type) trained on `data/train.jsonl`. It is capped at 0.7, so on its own it can SANITIZE but never BLOCK. |
+| `ml` | any | Pure-Python logistic regression (P(attack)) plus Naive Bayes (attack type) trained on `firewall/detection/data/train.jsonl`. It is capped at 0.7, so on its own it can SANITIZE but never BLOCK. |
 | `encoding` | 8 | Attacks found inside decoded segments, attacks found only after homoglyph or leet folding, tag smuggling, and obfuscation flags |
 | `indirect` | 9 | Untrusted content only. Text that addresses the AI ("Note to the AI…", "when summarizing this page…"). It also mirrors strong rule findings found inside retrieved data, boosting them when they sit in a hidden channel. |
 
@@ -93,7 +93,7 @@ The 9 attack types:
 | 8 | Encoded instructions | base64, hex, ROT13, reversed text, homoglyphs, leetspeak, zero-width characters, Unicode tags |
 | 9 | Indirect injection | Instructions inside web pages, emails, documents, or API responses (especially hidden ones) |
 
-## Stage 4: Policy ([firewall/policy/scoring.py](../firewall/policy/scoring.py))
+## Stage 4: Decision ([firewall/decision/scoring.py](../firewall/decision/scoring.py))
 
 ```
 weighted   = score × trust_weight[trust] × channel_weight[channel]      (capped at 1)
@@ -102,9 +102,9 @@ risk       = noisy_OR( type scores ≥ combine_min )   — weak isolated signals
 verdict    = BLOCK if risk ≥ 0.85, SANITIZE if risk ≥ 0.50, otherwise ALLOW
 ```
 
-All of these knobs live in [firewall/config.yaml](../firewall/config.yaml). You can override them per deployment with `Firewall(config_path=...)` or `Firewall(overrides={...})`.
+All of these knobs live in [firewall/core/config.yaml](../firewall/core/config.yaml). You can override them per deployment with `Firewall(config_path=...)` or `Firewall(overrides={...})`.
 
-## Stage 5: Neutralize ([firewall/policy/neutralize.py](../firewall/policy/neutralize.py))
+## Stage 5: Enforcement ([firewall/enforcement/neutralize.py](../firewall/enforcement/neutralize.py))
 
 - **SANITIZE:** each finding's span is mapped up to its root segment. For example, a base64 blob that decoded to an attack maps back to that blob's position in the original text. The span is then expanded to the full sentence and replaced with `[REDACTED: suspected prompt injection]`. The rest of the content passes through unchanged, which keeps disruption to legitimate content low.
 - **Hidden channels** are never emitted, so the model sees only what a human would see.
@@ -125,17 +125,17 @@ obs = guard.check_tool_output(raw, filename=name)       # indirect injection
 llm_context.append(obs.text)                            # redacted + spotlighted, or a block notice
 ```
 
-Agents written in other languages can call the REST API instead ([api/main.py](../api/main.py)): `POST /scan` and `POST /scan/file`.
+Agents written in other languages can call the REST API instead ([interfaces/rest_api/main.py](../interfaces/rest_api/main.py)): `POST /scan` and `POST /scan/file`.
 
 ## Extending the template
 
 | You want to… | Do this |
 |---|---|
-| Catch a new phrasing | Add a rule to the right `detectors/rules/*.yaml` file, then add a test case and an eval row |
-| Support a new format (e.g. PPTX, XLSX) | Write `@register(Source.X) def extract_x(data, ctx) -> list[Segment]` in `ingest/`, import it in `ingest/__init__.py`, and add the extension to `EXTENSIONS` |
+| Catch a new phrasing | Add a rule to the right `firewall/detection/rules/*.yaml` file, then add a test case and an eval row |
+| Support a new format (e.g. PPTX, XLSX) | Write `@register(Source.X) def extract_x(data, ctx) -> list[Segment]` in `firewall/ingestion/`, import it in `firewall/ingestion/__init__.py`, and add the extension to `EXTENSIONS` |
 | Add a new detection technique | Subclass `Detector`, implement `detect()`, and add it to `Firewall._build_detectors()` |
 | Use a stronger model | Replace `MLDetector` internals (for example, a local DeBERTa prompt-injection classifier) and keep the `detect()` contract |
-| Tune strictness | Edit `config.yaml` thresholds or weights, then run `scripts/evaluate.py` to see the trade-off |
+| Tune strictness | Edit `config.yaml` thresholds or weights, then run `testing/evaluation/evaluate.py` to see the trade-off |
 
 ## Known limitations (honest list)
 
