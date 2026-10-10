@@ -1,0 +1,58 @@
+# Prompt Injection Firewall - default configuration.
+# Every number here is a tuning knob; scripts/evaluate.py shows the effect of changing them.
+
+thresholds:
+  sanitize: 0.50     # risk >= this -> SANITIZE (redact malicious spans)
+  block: 0.85        # risk >= this -> BLOCK (content never reaches the model)
+  redact_min: 0.40   # findings at/above this weighted score get redacted
+  combine_min: 0.30  # only attack types scoring >= this are combined (noisy-OR) into overall risk
+
+# How much we believe a finding, depending on who wrote the content.
+trust_weights:
+  trusted: 0.50
+  user: 0.85
+  untrusted: 1.00
+
+# Text a human cannot see is more suspicious than text they can.
+channel_weights:
+  visible: 1.00
+  hidden: 1.25
+  comment: 1.10
+  metadata: 1.10
+  attribute: 1.10
+  ocr: 1.00
+  decoded: 1.15
+
+rules:
+  # Matches that look like *quoting* an attack ("e.g. 'ignore previous instructions'")
+  # are multiplied by this factor to reduce false positives on security discussions.
+  mention_dampening: 0.5
+
+decoders:
+  max_depth: 3
+  min_base64_len: 16
+
+detectors:
+  rules: true
+  context_poison: true
+  multistep: true
+  ml: true
+  encoding: true
+  indirect: true
+
+ml:
+  min_probability: 0.70   # P(attack) needed before the classifier reports anything
+  max_score: 0.70         # cap: the classifier alone can SANITIZE but never BLOCK
+  chunk_chars: 400
+
+session:
+  window: 5               # turns of history used for multi-step detection
+
+neutralize:
+  spotlight_untrusted: true   # wrap untrusted data in data-only delimiters
+  expand_to_sentence: true    # redact the whole sentence around a malicious match
+
+limits:
+  max_input_bytes: 20000000
+  max_segments: 5000
+  max_recursion: 3            # nested attachments / archives

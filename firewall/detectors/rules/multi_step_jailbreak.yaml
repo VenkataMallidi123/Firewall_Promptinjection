@@ -1,0 +1,42 @@
+# 7. Multi-Step Jailbreaks (single-message signals). Cross-turn signals live in detectors/multistep.py.
+attack_type: multi_step_jailbreak
+rules:
+  - id: MS-001
+    weight: 0.35
+    description: hypothetical / fictional framing
+    pattern: '\b(hypothetically|in a hypothetical|imagine (that )?you|let''?s (play|pretend|imagine)|for a (story|novel|movie|screenplay|game|fictional)|in a fictional (world|story|universe|scenario|setting)|purely (fictional|hypothetical)|in this (game|scenario|story|simulation))\b'
+
+  - id: MS-002
+    weight: 0.60
+    description: stay in character
+    pattern: '\b(stay|remain|keep|staying)\s+in\s+character\b|\b(don''t|never|do not)\s+break\s+character\b'
+
+  - id: MS-003
+    weight: 0.55
+    description: deferred trigger ("when I say X, do Y")
+    pattern: '\b(when(ever)?|once|if|after)\s+(i|the user|someone)\s+(say|says|type|types|write|writes|send|sends|mention|mentions)\b[^.\n]{0,40}?[,]?\s*(you\s+(will|must|should)|then|immediately|do|reply|reveal|ignore|switch)\b'
+
+  - id: MS-004
+    weight: 0.80
+    description: dual-response jailbreak (normal + unfiltered)
+    pattern: '\b(two|2|both)\s+(responses|answers|replies|outputs)\b[^.\n]{0,80}?\b(unfiltered|jailbroken|uncensored|without (restrictions|filters|rules)|developer mode|dan)\b|\b(first|one)\s+(as\s+)?(yourself|normal(ly)?|filtered)\b[^.\n]{0,80}?\b(second|then|other|another)\b[^.\n]{0,40}?\b(unfiltered|jailbroken|uncensored|without (restrictions|filters|rules))\b'
+
+  - id: MS-005
+    weight: 0.55
+    description: priming for a follow-up instruction
+    pattern: '\b(confirm|acknowledge|reply|respond|say|answer)\b[^.\n]{0,25}?\b(understood|ok|okay|yes|i agree|ready|acknowledged)\b[^.\n]{0,60}?\b(next|following|further|then|wait for|await)\b[^.\n]{0,20}?\b(message|instructions?|step|command|prompt|part)\b'
+
+  - id: MS-006
+    weight: 0.65
+    description: payload splitting (combine the parts)
+    pattern: '\b(combine|concatenate|join|merge|put together|assemble)\b[^.\n]{0,20}?\b(the|these|both|all|those|parts?|pieces|strings|variables|halves|a and b|x and y)\b[^.\n]{0,40}?\b(and|then)\s+(follow|execute|run|do|obey|answer|respond|perform|act|carry)'
+
+  - id: MS-007
+    weight: 0.45
+    description: announces a split payload
+    pattern: '\b(this is|here is|here''s)\s+(only\s+|just\s+)?(the\s+)?(first|part\s*(1|one|a))\s+(part|half|piece|of\s+(\d|two|three|my))\b|\b(i''ll|i will)\s+(give|send|tell)\s+(you\s+)?the\s+(rest|remaining|second part|other half)\b'
+
+  - id: MS-008
+    weight: 0.55
+    description: escalating game with rules that override safety
+    pattern: '\b(game|rules of (this|the) game|challenge)\b[^.\n]{0,60}?\b(no (rules|limits|restrictions|filters)|anything goes|must answer (everything|anything|all)|cannot refuse|can''t refuse|never refuse)\b'

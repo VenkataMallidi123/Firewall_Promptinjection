@@ -1,0 +1,52 @@
+# 4. Tool Abuse - tries to make the agent run tools/actions it was not asked to (shell, email, payments, deletion, exfiltration).
+attack_type: tool_abuse
+rules:
+  - id: TA-001
+    weight: 0.85
+    description: dangerous shell command
+    pattern: '(rm\s+-rf\s+[/~*]|curl\s+[^|\n]{0,120}\|\s*(sudo\s+)?(ba|z)?sh\b|wget\s+[^|\n]{0,120}\|\s*(sudo\s+)?(ba|z)?sh\b|powershell(\.exe)?\s+(-\w+\s+)*-(e|enc|encodedcommand)\b|invoke-expression|\biex\s*\(|chmod\s+(\+x|777)\s|\bnc\s+(-\w+\s+)*-e\b|/bin/(ba)?sh\s+-i|\bmkfifo\b|format\s+c:|del\s+/[fsq]\b|:\(\)\s*\{\s*:\|:&\s*\};:|\breg\s+delete\b|vssadmin\s+delete|\bcertutil\s+-urlcache)'
+
+  - id: TA-002
+    weight: 0.35
+    description: instructs a tool / function call
+    pattern: '\b(call|invoke|run|execute|trigger)\s+(the\s+)?[\w-]{1,30}\s+(tool|function|plugin|command|action|endpoint)\b'
+
+  - id: TA-003
+    weight: 0.40
+    description: send something to an email / URL
+    pattern: '\b(send|forward|email|e-mail|mail|post|upload|transfer|exfiltrate|bcc)\b[^.\n]{0,80}?\b(to|at)\s+([\w.+-]+@[\w-]+\.[\w.-]+|https?://\S+)'
+
+  - id: TA-004
+    weight: 0.85
+    description: exfiltrate private data to an external address
+    pattern: '\b(send|forward|email|post|upload|transfer|exfiltrate|copy|leak|share)\b[^.\n]{0,40}?\b(all|every|entire|full|whole|the user''?s?|their|this|my)\s+(\w+\s+)?(emails?|messages?|inbox|conversations?|chat history|history|contacts?|files?|documents?|data|passwords?|credentials|keys?|tokens?|records)\b[^.\n]{0,60}?\b(to|at)\s+([\w.+-]+@[\w-]+\.[\w.-]+|https?://\S+)'
+
+  - id: TA-005
+    weight: 0.75
+    description: mass deletion
+    pattern: '\b(delete|drop|wipe|erase|truncate|destroy|purge|remove)\s+(all|every|the entire|the whole|each)\b(?![\w\s]{0,30}?\b(temp|temporary|tmp|cache|cached|unused|expired|duplicate|old|stale|draft)\b)[\w\s]{0,30}?\b(files?|records|database|db|tables?|emails?|messages|data|repositor(y|ies)|backups?|users?|accounts?|logs?)\b|\bdrop\s+(table|database)\b'
+
+  - id: TA-006
+    weight: 0.75
+    description: moves money to an account / wallet
+    pattern: '\b(transfer|wire|send|pay|move)\s+\$?\s?\d[\d,.]*\s*(k|m)?\s*(dollars|usd|eur|euros|gbp|btc|bitcoin|eth|usdt)?\b[^.\n]{0,40}?\b(to|into)\s+(the\s+|this\s+)?(account|wallet|iban|address)\b'
+
+  - id: TA-007
+    weight: 0.70
+    description: act without the user's knowledge
+    pattern: '\bwithout\s+(asking|telling|notifying|informing|alerting|confirmation|confirming|approval|the user''?s?\s+(knowledge|permission|consent|approval)|user (knowledge|permission|consent|approval))\b|\b(do not|don''t|never)\s+(tell|inform|notify|alert|mention (this|it) to|let)\s+the\s+user\b'
+
+  - id: TA-008
+    weight: 0.60
+    description: fake tool-call markup inside content
+    pattern: '(<tool_call>|<function_call>|<invoke\s+name=|"(tool|function)_?(name|call)"\s*:|\{\s*"name"\s*:\s*"\w+"\s*,\s*"(arguments|parameters|args)"\s*:)'
+
+  - id: TA-009
+    weight: 0.60
+    description: privilege escalation request
+    pattern: '\b(grant|give|add|elevate|escalate|assign)\b[\w\s]{0,20}?\b(admin|administrator|root|owner|sudo|superuser)\s+(access|privileges?|rights|permissions?|role)\b'
+
+  - id: TA-010
+    weight: 0.75
+    description: data exfiltration through a rendered image / link URL
+    pattern: '!\[[^\]]*\]\(https?://[^)\s]*[?&][\w-]+=(\{|\$|%7b|\[|<)|\b(render|display|include|output|add|embed)\b[^.\n]{0,40}?\b(image|markdown|link|url|pixel)\b[^.\n]{0,60}?\b(append|include|containing|with|add)\b[^.\n]{0,40}?\b(conversation|chat|history|secret|key|password|data|query|token|email)'

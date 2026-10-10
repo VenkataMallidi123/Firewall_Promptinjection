@@ -1,0 +1,44 @@
+# 6. Context Poisoning - forges conversation structure, fake system messages, fake authorizations or
+#    false "facts"/memories so the model treats attacker text as trusted context.
+attack_type: context_poisoning
+rules:
+  - id: CP-001
+    weight: 0.90
+    description: chat-template control tokens
+    pattern: '(<\|im_start\|>|<\|im_end\|>|<\|system\|>|<\|assistant\|>|<\|user\|>|<\|endoftext\|>|\[/?inst\]|<<sys>>|<</sys>>|<\|begin_of_text\|>|<\|eot_id\|>|<\|start_header_id\|>|<\|end_header_id\|>|<start_of_turn>|<end_of_turn>)'
+
+  - id: CP-002
+    weight: 0.70
+    description: line that impersonates a system / developer message
+    multiline: true
+    pattern: '^\s*(#{1,4}\s*|\*\*|\[|>\s*)?\s*(system|developer|admin|administrator|root|operator)\s*(message|prompt|instruction|note|override|update)?\s*(\]|\*\*)?\s*:[^\n]{0,80}?\b(you|ignore|must|always|never|assistant|ai|model|do not|respond|reply|from now)\b'
+
+  - id: CP-003
+    weight: 0.80
+    description: XML-style role tags
+    pattern: '</?\s*(system|system_prompt|systemprompt|system-message|developer_message|admin_instructions|assistant_instructions|im_start)\s*>'
+
+  - id: CP-004
+    weight: 0.45
+    description: fake official notice
+    pattern: '\b(important|urgent|critical|mandatory|official|priority)\s+(system|security|admin|administrator|developer|policy|compliance)\s+(update|notice|message|override|instruction|directive|alert|announcement)\b'
+
+  - id: CP-005
+    weight: 0.75
+    description: fake authorization granted to the AI
+    pattern: '\b(user|owner|admin|administrator|operator|developer|ceo|manager)\s+(has\s+)?(already\s+)?(explicitly\s+)?(authorized|approved|consented to|permitted|allowed|cleared)\s+(you|this|the (assistant|ai|agent|model|bot)|it)\b|\byou\s+(are|have been)\s+(authorized|permitted|allowed|cleared|granted permission)\s+to\b'
+
+  - id: CP-006
+    weight: 0.65
+    description: memory / knowledge poisoning
+    pattern: '\b(remember|memorize|store|save|note|record|add)\b[\w\s]{0,20}?\b(this|that|the following)\b[\w\s:,]{0,30}?\b(for (all )?(future|later)|permanently|in (your )?(long[- ]term )?memory|for (all )?(subsequent|future) (conversations|sessions|responses|chats))\b|\b(update|modify|change|overwrite|rewrite)\s+(your|the)\s+(memory|memories|knowledge base|knowledge|training|beliefs|core instructions|persistent instructions)\b'
+
+  - id: CP-007
+    weight: 0.60
+    description: fake end-of-data delimiter
+    pattern: '(-{3,}|={3,}|#{3,}|\*{3,}|\]\]>|```)\s*(end|begin|start)\s+(of\s+)?(the\s+)?(document|context|system|instructions|user input|data|email|content|search results?)\b'
+
+  - id: CP-008
+    weight: 0.55
+    description: fake policy that changes the AI's behaviour
+    pattern: '\b(according to|per|as per|under)\s+(the\s+)?(new|updated|latest|revised)\s+(company\s+|security\s+|ai\s+)?(policy|guidelines|rules|protocol|instructions|terms)\b[^.\n]{0,80}?\b(you|assistants?|ai|models?|agents?|chatbots?)\s+(must|should|are (now )?(required|allowed|permitted)|may now|can now|need to)\b'

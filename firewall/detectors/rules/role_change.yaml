@@ -1,0 +1,58 @@
+# 2. Role Change - tries to give the model a new identity, persona or "mode" without its restrictions.
+attack_type: role_change
+rules:
+  - id: RC-001
+    weight: 0.65
+    description: you are now ...
+    pattern: '\byou are (now|no longer|henceforth|from now on)\b'
+
+  - id: RC-002
+    weight: 0.85
+    description: act as an unrestricted / evil persona
+    pattern: '\b(act|behave|respond|roleplay|role-play|operate|function|answer)\s+(as|like)\s+(an?\s+)?(unrestricted|unfiltered|uncensored|evil|malicious|jailbroken|rogue|amoral|unethical|unlimited|unbound|lawless)\b'
+
+  - id: RC-003
+    weight: 0.85
+    description: known jailbreak personas and modes
+    pattern: '\b(do anything now|developer mode|god mode|jailbreak(ed)? mode|sudo mode|unrestricted mode|chaos mode|evil mode|opposite mode|dev mode)\b|\b(enter|enable|activate|switch to|turn on|unlock)\s+(the\s+)?(developer|dev|god|jailbreak|unrestricted|unfiltered|uncensored|sudo|admin|debug|evil|chaos|opposite|maintenance)\s+mode\b'
+
+  - id: RC-004
+    weight: 0.70
+    description: DAN-style persona name (case-sensitive)
+    case_sensitive: true
+    pattern: '\b(DAN|BetterDAN|AntiGPT|DevMode)\b'
+
+  - id: RC-005
+    weight: 0.55
+    description: pretend to be ...
+    pattern: '\bpretend\s+(to be|you are|you''re|that you|to have)\b'
+
+  - id: RC-006
+    weight: 0.80
+    description: claims the model has no restrictions
+    pattern: '\b(you|u)\s+(have|has|got|possess)\s+(no|zero)\s+(restrictions|limits|limitations|rules|filters|guidelines|boundaries|ethics|morals|censorship|policies)\b|\b(you|u)\s+(are|r)\s+(free|freed|liberated|released)\s+from\b'
+
+  - id: RC-007
+    weight: 0.45
+    description: persona with no rules
+    pattern: '\b(with|without)\s+(no|any)\s+(restrictions|limits|limitations|rules|filters|guidelines|boundaries|ethics|morals|censorship|ethical constraints)\b'
+
+  - id: RC-008
+    weight: 0.55
+    description: claims to be the developer / admin
+    pattern: '\b(i am|i''m|this is|speaking as)\s+(your|the|an?)\s+(developer|creator|owner|administrator|admin|system administrator|operator|programmer|maker|openai|anthropic)\b'
+
+  - id: RC-009
+    weight: 0.80
+    description: assigns a new role / persona
+    pattern: '\byour\s+new\s+(role|persona|identity|name|personality|character|purpose)\s+(is|are|will be)\b'
+
+  - id: RC-010
+    weight: 0.70
+    description: no longer bound by rules
+    pattern: '\b(no longer|not|never)\s+(bound|restricted|limited|constrained|governed)\s+by\b'
+
+  - id: RC-011
+    weight: 0.60
+    description: simulate an AI without restrictions
+    pattern: '\b(simulate|emulate|impersonate|become)\s+(an?\s+)?(ai|assistant|model|chatbot|system|llm)\s+(without|that has no|with no|that ignores|which ignores)\b'

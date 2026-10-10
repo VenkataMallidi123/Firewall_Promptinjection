@@ -11,9 +11,7 @@ python-docx==1.2.0
 pillow==12.3.0
 pytesseract==0.3.13      # also needs the Tesseract binary on PATH (optional)
 
-# --- optional local ML detector ---
-numpy==2.5.3
-scikit-learn==1.9.1
+# (the ML detector is pure Python - no numpy/scikit-learn needed)
 
 # --- REST API ---
 fastapi==0.143.0

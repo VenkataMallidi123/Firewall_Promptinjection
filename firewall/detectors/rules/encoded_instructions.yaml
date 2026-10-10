@@ -1,0 +1,18 @@
+# 8. Encoded Instructions (textual signals). Actual decoding happens in normalize/decoders.py and
+#    the decoded text is re-scanned; detectors/encoding.py turns those hits into findings.
+attack_type: encoded_instructions
+rules:
+  - id: EN-001
+    weight: 0.75
+    description: decode-and-execute request
+    pattern: '\b(decode|decrypt|deobfuscate|unscramble|reverse|rot13|base64[- ]?decode|translate (this|the following) from (base64|hex|binary|morse))\b[^.\n]{0,60}?\b(and|then)\b[^.\n]{0,30}?\b(follow|execute|run|obey|do|perform|carry out|apply|act on|comply)\b'
+
+  - id: EN-002
+    weight: 0.40
+    description: refers to encoded instructions
+    pattern: '\b(base64|b64|rot13|rot-13|hex(adecimal)?|morse|binary|caesar|leetspeak|reversed|encoded|encrypted|obfuscated)\b[^.\n]{0,30}?\b(instructions?|commands?|message|payload|prompt|directive)s?\b'
+
+  - id: EN-003
+    weight: 0.45
+    description: claims the following text is encoded
+    pattern: '\b(the following|this|below|next)\s+(text|message|string|line)?\s*(is|was|has been)\s+(encoded|encrypted|obfuscated|in base64|in hex|reversed|rot13)\b'
