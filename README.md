@@ -1,19 +1,28 @@
 # Firewall_Promptinjection
 Project created for ET Hackathon Unstop presented by Accenture
 
-**Prompt Injection Firewall**: a local, deterministic firewall (no LLM in the loop) that inspects everything an AI agent reads, including user messages, web pages, PDFs, Word documents, emails, Markdown, JSON API responses, source code, and images. It detects **all 9 attack types** from the problem statement and neutralizes them before they reach the model.
+**Prompt Injection Firewall**: a local, hybrid firewall that pairs deterministic rules with a locally trained ML classifier. It inspects everything an AI agent reads, including user messages, web pages, PDFs, Word documents, emails, Markdown, JSON API responses, source code, and images. It detects **all 9 attack types** from the problem statement and neutralizes them before they reach the model.
 
 Target tier: **D3 + F3**. It handles mixed multimodal input and detects 9 of the 9 attack types.
 
 ## Requirements
 
 - Python 3.14
-- Dependencies are pinned in [requirements.txt](requirements.txt): pydantic, pyyaml, beautifulsoup4, pypdf, python-docx, pillow, pytesseract, fastapi, uvicorn, python-multipart, and for tests: reportlab, pytest, httpx
-- Optional: [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) on PATH. Without it, the firewall still scans an image's metadata, but not the text drawn in its pixels.
+- Python libraries: all dependencies are pinned in [requirements.txt](requirements.txt) and installed in one step (see below)
+- [Visual Studio Code](https://code.visualstudio.com/) with the Python extension (recommended editor)
 
 No API keys or environment variables are needed. Everything runs locally.
 
 ## Installation and environment setup
+
+The project is set up to run in Visual Studio Code:
+
+1. Open VS Code and use **Terminal → New Terminal** to open a terminal.
+2. Run the commands below in that terminal.
+3. Open the folder with **File → Open Folder** and select `Firewall_Promptinjection`.
+4. When VS Code asks, select the `.venv` interpreter, or choose it via **Ctrl+Shift+P → Python: Select Interpreter**.
+
+All commands in this README run in the VS Code integrated terminal.
 
 ```bash
 git clone https://github.com/VenkataMallidi123/Firewall_Promptinjection.git
@@ -22,34 +31,35 @@ cd Firewall_Promptinjection
 python -m venv .venv
 .venv\Scripts\activate            # Windows  (source .venv/bin/activate on Linux/macOS)
 pip install -r requirements.txt
-
-python testing/samples/make_samples.py      # generate the PDF/DOCX/EML/PNG/HTML/... test files
 ```
 
 ## Running
 
+There are three ways to run the firewall. Run each one on its own from the project root, with the virtual environment activated.
+
+### 1. Web demo (browser)
+
 ```bash
-python interfaces/demo/cli/run_demo.py          # agent demo, terminal: same attacks WITHOUT vs WITH the firewall
-python interfaces/demo/web/server.py            # agent demo, browser: http://localhost:8001
-uvicorn interfaces.rest_api.main:app --reload   # REST API on http://localhost:8000 (Swagger UI at /docs)
-python testing/evaluation/evaluate.py           # reliability report (precision/recall/FPR per type and source)
-pytest                                          # 102 passing tests (1 skipped without Tesseract)
+python interfaces/demo/web/server.py
 ```
 
-## Use it from Python
+Open http://localhost:8001. It runs the agent demo in the browser, showing each attack WITHOUT vs WITH the firewall.
 
-```python
-from firewall import Firewall, Session
+### 2. CLI demo (terminal)
 
-fw = Firewall()
-r = fw.scan_file("testing/samples/attacks/report_white_text.pdf")       # retrieved data -> untrusted
-print(r.summary())        # BLOCK risk=1.00 types=[instruction_override, secret_extraction, indirect_injection]
-for f in r.findings[:3]:
-    print(f.rule_id, f.attack_type.value, f.weighted_score, r.segments[f.segment].location, f.evidence)
-
-r = fw.scan("Summarize this thread for me", source="user", session=Session())
-model_input = r.safe_text  # redacted + spotlighted text, or a block notice
+```bash
+python interfaces/demo/cli/run_demo.py
 ```
+
+Runs the same agent demo in the terminal and prints each attack WITHOUT vs WITH the firewall.
+
+### 3. REST API
+
+```bash
+uvicorn interfaces.rest_api.main:app --reload
+```
+
+Serves the API on http://localhost:8000, with interactive Swagger docs at http://localhost:8000/docs. See [API documentation](#api-documentation) for the endpoints.
 
 ## API documentation
 
@@ -128,4 +138,31 @@ testing/                  how we prove it works
   evaluation/             evaluate.py + eval.jsonl (dev) + holdout.jsonl (test)
   samples/                make_samples.py + generated attack/benign files
 docs/                     hackathon deck
+```
+
+## Testing
+
+### Tests and evaluation
+
+```bash
+pytest                                  # 102 passing tests (1 skipped without Tesseract)
+python testing/evaluation/evaluate.py   # reliability report (precision/recall/FPR per type and source)
+python testing/samples/make_samples.py  # optional: regenerate the PDF/DOCX/EML/PNG/HTML/... sample files
+```
+
+## Integrate the Firewall into Your Own AI Application
+
+Import the firewall directly into your own Python code, with no server needed:
+
+```python
+from firewall import Firewall, Session
+
+fw = Firewall()
+r = fw.scan_file("testing/samples/attacks/report_white_text.pdf")       # retrieved data -> untrusted
+print(r.summary())        # BLOCK risk=1.00 types=[instruction_override, secret_extraction, indirect_injection]
+for f in r.findings[:3]:
+    print(f.rule_id, f.attack_type.value, f.weighted_score, r.segments[f.segment].location, f.evidence)
+
+r = fw.scan("Summarize this thread for me", source="user", session=Session())
+model_input = r.safe_text  # redacted + spotlighted text, or a block notice
 ```
