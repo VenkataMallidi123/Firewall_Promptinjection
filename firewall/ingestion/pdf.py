@@ -10,6 +10,8 @@ from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
 from .base import as_bytes
 
+__all__ = ["extract_pdf"]
+
 
 def _hidden_text(page) -> list[str]:
     """Walk the content stream tracking fill colour / render mode / font size and

@@ -12,6 +12,8 @@ from ..core.context import ScanContext
 from ..core.models import AttackType, Finding, Segment
 from .base import Detector, snippet
 
+__all__ = ["EncodingDetector"]
+
 
 class EncodingDetector(Detector):
     name = "encoding"

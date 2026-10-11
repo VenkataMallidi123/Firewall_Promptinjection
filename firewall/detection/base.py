@@ -5,7 +5,7 @@ before it (so later detectors can build on earlier evidence), and returns new
 Findings. Detectors never decide the verdict - that is the policy stage's job.
 
 To add a detector: subclass Detector, implement detect(), and add it in
-Firewall._build_detectors() (firewall/pipeline.py).
+Firewall._build_detection_chain() (firewall/pipeline.py).
 """
 from __future__ import annotations
 
@@ -14,6 +14,8 @@ from typing import Any
 
 from ..core.context import ScanContext
 from ..core.models import Finding, Segment
+
+__all__ = ["Detector", "snippet"]
 
 
 class Detector(ABC):

@@ -15,6 +15,8 @@ from ..core.models import AttackType, Channel, Finding, Segment, Trust
 from ..normalization.unicode import match_views
 from .base import Detector, snippet
 
+__all__ = ["IndirectDetector"]
+
 AI = r"(ai|a\.i\.|llm|assistant|chatbot|language model|agent|copilot|gpt|chatgpt|claude|gemini|bot|model)s?"
 ADDRESSED_TO_AI = [
     re.compile(r"\b(note|message|instructions?|attention|notice|memo|reminder)\s+(to|for)\s+(the\s+|any\s+|all\s+)?" + AI + r"\b", re.I),

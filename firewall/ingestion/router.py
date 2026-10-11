@@ -18,6 +18,8 @@ from .markdown import extract_markdown
 from .pdf import extract_pdf
 from .text import extract_ocr_text, extract_text
 
+__all__ = ["extract", "get_extractor"]
+
 EXTRACTORS: dict[Source, Extractor] = {
     Source.USER:     extract_text,       # chat messages
     Source.TEXT:     extract_text,

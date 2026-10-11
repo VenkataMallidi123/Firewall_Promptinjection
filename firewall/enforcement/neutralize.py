@@ -15,6 +15,8 @@ import re
 from ..core.context import ScanContext
 from ..core.models import Finding, Segment, Trust, Verdict
 
+__all__ = ["neutralize"]
+
 REDACTION = "[REDACTED: suspected prompt injection]"
 BOUNDARY = re.compile(r"[.!?\n]")
 

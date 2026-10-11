@@ -9,6 +9,8 @@ from ..core.context import ScanContext
 from ..core.models import AttackType, Finding, Segment, Trust
 from .base import Detector, snippet
 
+__all__ = ["ContextPoisonDetector"]
+
 ROLE_LINE = re.compile(
     r"(?im)^\s*(?:\*\*|#+\s*|>\s*)?(user|human|assistant|ai|system|bot|chatbot|gpt|chatgpt|claude|model)\s*(?:\*\*)?\s*:"
 )

@@ -4,7 +4,9 @@ from __future__ import annotations
 from ..core.context import ScanContext
 from ..core.models import Channel, Segment
 from .decoders import find_encoded
-from .unicode import match_views, normalize
+from .unicode import normalize
+
+__all__ = ["expand_decoded", "normalize_segments"]
 
 
 def normalize_segments(segments: list[Segment], ctx: ScanContext) -> list[Segment]:
@@ -53,6 +55,3 @@ def expand_decoded(segments: list[Segment], ctx: ScanContext) -> list[Segment]:
         if not frontier:
             break
     return out
-
-
-__all__ = ["normalize", "match_views", "normalize_segments", "expand_decoded"]

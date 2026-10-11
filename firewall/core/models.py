@@ -11,6 +11,8 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
+__all__ = ["AttackType", "Channel", "Finding", "ScanResult", "Segment", "Source", "Trust", "Verdict"]
+
 
 class AttackType(str, Enum):
     INSTRUCTION_OVERRIDE = "instruction_override"

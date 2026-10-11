@@ -16,6 +16,8 @@ from __future__ import annotations
 import re
 import unicodedata
 
+__all__ = ["match_views", "normalize"]
+
 INVISIBLE = re.compile(
     "[­͏\u061Cᅟᅠ឴឵᠎​-\u200F\u202A-\u202E⁠-⁤\u2066-⁯ㅤ﻿ﾠ]"
 )

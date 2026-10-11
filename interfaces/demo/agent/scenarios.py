@@ -5,6 +5,8 @@ read tool to a file under testing/samples, or (bytes, filename) for inline conte
 """
 from __future__ import annotations
 
+__all__ = ["BY_ATTACK_TYPE", "BY_DELIVERY_CHANNEL"]
+
 Scenario = tuple[str, "dict[str, str] | tuple[bytes, str]", "list[str]"]
 
 # One scenario per attack type from the problem statement. Each payload is something the

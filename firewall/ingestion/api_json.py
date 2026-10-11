@@ -10,6 +10,8 @@ from ..core.models import Channel, Segment, Source
 from .base import as_text
 from .text import extract_text
 
+__all__ = ["extract_json"]
+
 
 def extract_json(data: bytes | str, ctx: ScanContext) -> list[Segment]:
     raw = as_text(data)

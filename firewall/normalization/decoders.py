@@ -18,6 +18,8 @@ import re
 import urllib.parse
 from dataclasses import dataclass
 
+__all__ = ["find_encoded"]
+
 BASE64 = re.compile(r"(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/_-]{16,}={0,2}(?![A-Za-z0-9+/=_-])")
 HEX = re.compile(r"(?<![0-9a-fA-F])(?:[0-9a-fA-F]{2}[ :]?){12,}(?![0-9a-fA-F])")
 HEX_ESCAPES = re.compile(r"(?:\\x[0-9a-fA-F]{2}){6,}")

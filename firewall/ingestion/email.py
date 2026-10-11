@@ -10,6 +10,8 @@ from ..core.models import Channel, Segment, Source
 from .base import as_bytes, extend_rebased, extract_nested
 from .html import extract_html_segments
 
+__all__ = ["extract_email"]
+
 METADATA_HEADERS = {"reply-to", "comments", "keywords", "organization", "x-mailer"}
 
 

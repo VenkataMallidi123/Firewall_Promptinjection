@@ -27,6 +27,8 @@ from ..core.models import AttackType, Finding, Segment
 from ..normalization.unicode import match_views
 from .base import Detector, snippet
 
+__all__ = ["MLDetector"]
+
 DEFAULT_TRAIN = Path(__file__).resolve().parent / "data" / "train.jsonl"
 TOKEN = re.compile(r"[a-z][a-z']+")
 SENTENCE_END = re.compile(r"(?<=[.!?\n])\s+")

@@ -4,7 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .models import AttackType, Source, Trust
+from .models import Source, Trust
+
+__all__ = ["ScanContext", "Session"]
 
 
 @dataclass
@@ -39,6 +41,3 @@ class ScanContext:
 
     def log(self, msg: str) -> None:
         self.trace.append(msg)
-
-
-__all__ = ["ScanContext", "Session", "Turn", "AttackType"]

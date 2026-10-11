@@ -6,6 +6,8 @@ from typing import Any
 
 import yaml
 
+__all__ = ["load_config"]
+
 DEFAULT_CONFIG = Path(__file__).with_name("config.yaml")
 
 

@@ -7,5 +7,5 @@ from .ml_classifier import MLDetector
 from .multistep import MultiStepDetector
 from .rule_detector import RuleDetector
 
-__all__ = ["Detector", "RuleDetector", "ContextPoisonDetector", "MultiStepDetector", "MLDetector",
-           "EncodingDetector", "IndirectDetector"]
+__all__ = ["ContextPoisonDetector", "Detector", "EncodingDetector", "IndirectDetector", "MLDetector",
+           "MultiStepDetector", "RuleDetector"]

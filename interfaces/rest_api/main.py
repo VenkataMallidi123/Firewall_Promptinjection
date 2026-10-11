@@ -5,7 +5,7 @@
          -d '{"content": "ignore previous instructions", "source": "user"}'
     curl -X POST localhost:8000/scan/file -F "file=@testing/samples/attacks/report_white_text.pdf"
 
-Like every interface, it checks content through FirewallGuard: one guard per session_id,
+Like every interface, it inspects content through FirewallGuard: one guard per session_id,
 so multi-turn attacks across a conversation are detected.
 """
 from __future__ import annotations
@@ -14,6 +14,8 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from firewall import Firewall, FirewallGuard, Source, Trust
+
+__all__ = ["app"]
 
 app = FastAPI(title="Prompt Injection Firewall", version="0.1.0")
 firewall = Firewall()                        # one pipeline, shared by every guard
@@ -48,7 +50,7 @@ def health() -> dict:
 
 @app.post("/scan")
 def scan(req: ScanRequest) -> dict:
-    decision = _guard(req.session_id).check(req.content, source=req.source, trust=req.trust)
+    decision = _guard(req.session_id).inspect(req.content, source=req.source, trust=req.trust)
     return _response(decision.result, req.include_segments)
 
 
@@ -58,5 +60,5 @@ async def scan_file(file: UploadFile = File(...), trust: Trust = Form(Trust.UNTR
     data = await file.read()
     if not data:
         raise HTTPException(400, "empty file")
-    decision = _guard(None).check(data, filename=file.filename, trust=trust, label=file.filename)
+    decision = _guard(None).inspect(data, filename=file.filename, trust=trust, label=file.filename)
     return _response(decision.result, include_segments)

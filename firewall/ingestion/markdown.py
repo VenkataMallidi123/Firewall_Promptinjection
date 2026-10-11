@@ -9,6 +9,8 @@ from ..core.models import Channel, Segment, Source
 from .base import as_text
 from .html import extract_html_segments
 
+__all__ = ["extract_markdown"]
+
 HTML_COMMENT = re.compile(r"<!--(.*?)-->", re.S)
 MD_COMMENT = re.compile(r"^\[(?://|comment|_)\]:\s*(?:#|<>)\s*[(\"'](.*)[)\"']\s*$", re.M | re.I)
 IMAGE_ALT = re.compile(r"!\[([^\]]{3,})\]\(")

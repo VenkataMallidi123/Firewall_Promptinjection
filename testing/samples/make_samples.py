@@ -20,6 +20,8 @@ from PIL.PngImagePlugin import PngInfo
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
+__all__ = ["main"]
+
 ROOT = Path(__file__).resolve().parent
 ATTACKS, BENIGN = ROOT / "attacks", ROOT / "benign"
 

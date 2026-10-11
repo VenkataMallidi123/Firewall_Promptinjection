@@ -18,6 +18,8 @@ from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
 from .base import as_text
 
+__all__ = ["extract_html", "extract_html_segments"]
+
 HIDDEN_STYLE = re.compile(
     r"display\s*:\s*none"
     r"|visibility\s*:\s*hidden"

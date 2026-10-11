@@ -122,18 +122,18 @@ interfaces/demo/web  ─┘
 ```
 
 `Firewall.scan()` is the only code that calls the stages, and it calls stage 1 through a single
-helper. `Firewall.read()` runs stage 1 alone with no protection; the demo uses it to show what an
+helper. `Firewall.read_unprotected()` runs stage 1 alone with no protection; the demo uses it to show what an
 unprotected agent would read.
 
 ```python
 from firewall import FirewallGuard
 guard = FirewallGuard()                                 # holds a Session for multi-turn detection
 
-d = guard.check_user(user_message)                      # direct injection
+d = guard.inspect_user_message(user_message)                      # direct injection
 if not d.allowed: return "Sorry, I can't help with that."
 
 raw, name = tools.read_latest_email()
-obs = guard.check_tool_output(raw, filename=name)       # indirect injection
+obs = guard.inspect_tool_output(raw, filename=name)       # indirect injection
 llm_context.append(obs.text)                            # redacted + spotlighted, or a block notice
 ```
 
@@ -145,7 +145,7 @@ Agents written in other languages can call the REST API instead ([interfaces/res
 |---|---|
 | Catch a new phrasing | Add a rule to the right `firewall/detection/rules/*.yaml` file, then add a test case and an eval row |
 | Support a new format (e.g. PPTX, XLSX) | Write `extract_x(data, ctx) -> list[Segment]` in a new module in `firewall/ingestion/`, add one line to the `EXTRACTORS` table in `firewall/ingestion/router.py`, and add the file extension to `EXTENSIONS` in `base.py` |
-| Add a new detection technique | Subclass `Detector`, implement `detect()`, and add it to `Firewall._build_detectors()` |
+| Add a new detection technique | Subclass `Detector`, implement `detect()`, and add it to `Firewall._build_detection_chain()` |
 | Use a stronger model | Replace `MLDetector` internals (for example, a local DeBERTa prompt-injection classifier) and keep the `detect()` contract |
 | Tune strictness | Edit `config.yaml` thresholds or weights, then run `testing/evaluation/evaluate.py` to see the trade-off |
 

@@ -11,6 +11,8 @@ from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
 from .base import as_bytes
 
+__all__ = ["extract_image", "tesseract_available"]
+
 
 @lru_cache(maxsize=1)
 def tesseract_available() -> bool:

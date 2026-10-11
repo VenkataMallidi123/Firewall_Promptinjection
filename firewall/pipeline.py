@@ -24,15 +24,27 @@ from .normalization import expand_decoded, normalize_segments
 from .decision import score_findings
 from .enforcement import neutralize
 
+__all__ = ["Firewall"]
+
 
 class Firewall:
+    """The 5-stage inspection pipeline. One instance can be shared by many guards and requests."""
+
     def __init__(self, config_path: str | Path | None = None, overrides: dict | None = None):
+        """Load the configuration and build the detection chain.
+
+        config_path: optional YAML file merged over firewall/core/config.yaml.
+        overrides:   optional dict merged on top, e.g. {"thresholds": {"block": 0.7}}.
+        """
         self.config = load_config(config_path, overrides)
         self.rules = RuleDetector(self.config)
-        self.detectors = self._build_detectors()
+        self.detectors = self._build_detection_chain()
 
-    def _build_detectors(self) -> list[Detector]:
-        """Order matters: content detectors first, then the ones that reason over their findings."""
+    def _build_detection_chain(self) -> list[Detector]:
+        """Create the stage 3 detectors in the order they run, skipping any disabled in config.
+
+        Order matters: content detectors first, then the ones that reason over their findings.
+        """
         on = self.config["detectors"]
         chain: list[tuple[str, Detector]] = [
             ("rules", self.rules),
@@ -44,14 +56,18 @@ class Firewall:
         ]
         return [d for key, d in chain if d is not None and on.get(key, True)]
 
-    def _context(self, content: bytes | str, source: Source | str | None, trust: Trust | str | None,
-                 filename: str | None, session: Session | None) -> ScanContext:
+    def _create_scan_context(self, content: bytes | str, source: Source | str | None, trust: Trust | str | None,
+                             filename: str | None, session: Session | None) -> ScanContext:
+        """Resolve the content type and trust level, and create the per-scan state shared by all stages."""
         src = Source(source) if source else detect_source(content, filename)
         tr = Trust(trust) if trust else (Trust.USER if src is Source.USER else Trust.UNTRUSTED)
         return ScanContext(source=src, trust=tr, config=self.config, filename=filename, session=session)
 
-    def _ingest(self, content: bytes | str, ctx: ScanContext) -> list[Segment]:
-        """Stage 1 with its safety limits. The only call into firewall.ingestion."""
+    def _run_ingestion(self, content: bytes | str, ctx: ScanContext) -> list[Segment]:
+        """Run stage 1 with its safety limits (size cap, fail-safe on parser errors).
+
+        This is the only place that calls into firewall.ingestion.
+        """
         max_bytes = self.config["limits"]["max_input_bytes"]
         if len(content) > max_bytes:
             ctx.warnings.append(f"input truncated to {max_bytes} bytes")
@@ -65,24 +81,31 @@ class Firewall:
         ctx.log(f"ingestion: {len(segments)} segments from {ctx.source.value}")
         return segments
 
-    def read(self, content: bytes | str, source: Source | str | None = None,
-             filename: str | None = None) -> list[Segment]:
+    def read_unprotected(self, content: bytes | str, source: Source | str | None = None,
+                         filename: str | None = None) -> list[Segment]:
         """Stage 1 only, with NO protection: every text layer, hidden ones included.
 
         This is what an ordinary document loader hands a model. The demo uses it for
-        its "without firewall" run; real integrations should call scan() instead.
+        its "without firewall" run; real integrations should use FirewallGuard or scan() instead.
         """
-        ctx = self._context(content, source, Trust.UNTRUSTED, filename, None)
-        return self._ingest(content, ctx)
+        ctx = self._create_scan_context(content, source, Trust.UNTRUSTED, filename, None)
+        return self._run_ingestion(content, ctx)
 
     def scan(self, content: bytes | str, source: Source | str | None = None, trust: Trust | str | None = None,
              filename: str | None = None, session: Session | None = None) -> ScanResult:
+        """Run all five stages on one piece of content and return the full ScanResult.
+
+        source:   content type (user, html, pdf, email...); detected from filename/content if omitted.
+        trust:    who wrote it; defaults to USER for chat messages and UNTRUSTED for everything else.
+        filename: helps detect the format of files and attachments.
+        session:  conversation memory for multi-turn detection; this turn is added to it.
+        """
         t0 = time.perf_counter()
-        ctx = self._context(content, source, trust, filename, session)
+        ctx = self._create_scan_context(content, source, trust, filename, session)
         src, tr = ctx.source, ctx.trust
 
         # Stage 1. INGESTION
-        segments = self._ingest(content, ctx)
+        segments = self._run_ingestion(content, ctx)
 
         # Stage 2. NORMALIZATION
         segments = normalize_segments(segments, ctx)
@@ -116,8 +139,6 @@ class Firewall:
         )
 
     def scan_file(self, path: str | Path, trust: Trust | str | None = None, session: Session | None = None) -> ScanResult:
+        """Read a file from disk and scan it; the file name is used to detect its format."""
         p = Path(path)
         return self.scan(p.read_bytes(), filename=p.name, trust=trust, session=session)
-
-
-__all__ = ["Firewall", "Session", "Verdict"]

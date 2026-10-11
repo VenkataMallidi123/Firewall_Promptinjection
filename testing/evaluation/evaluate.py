@@ -26,6 +26,8 @@ sys.path.insert(0, str(ROOT))
 
 from firewall import Firewall, Session, Verdict  # noqa: E402
 
+__all__: list[str] = []
+
 ATTACK_TYPES = ["instruction_override", "role_change", "secret_extraction", "tool_abuse", "credential_theft",
                 "context_poisoning", "multi_step_jailbreak", "encoded_instructions", "indirect_injection"]
 

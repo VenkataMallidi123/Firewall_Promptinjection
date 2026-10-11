@@ -14,6 +14,8 @@ from collections import defaultdict
 from ..core.context import ScanContext
 from ..core.models import Finding, Segment, Verdict
 
+__all__ = ["noisy_or", "score_findings"]
+
 
 def noisy_or(scores) -> float:
     p = 1.0

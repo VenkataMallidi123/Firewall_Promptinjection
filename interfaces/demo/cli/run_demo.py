@@ -17,6 +17,8 @@ from interfaces.demo.agent.naive_agent import NaiveAgent  # noqa: E402
 from interfaces.demo.agent.scenarios import BY_DELIVERY_CHANNEL  # noqa: E402
 from interfaces.demo.agent.tools import ToolBox  # noqa: E402
 
+__all__: list[str] = []
+
 
 def run(agent_tools: ToolBox, agent: NaiveAgent, turns: list[str]) -> list[str]:
     out = []

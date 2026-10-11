@@ -5,9 +5,8 @@ Pipeline: ingestion -> normalization -> detection -> decision -> enforcement
 See docs/ARCHITECTURE.md.
 """
 from .core.context import Session
-from .guard import FirewallGuard, GuardDecision
-from .core.models import AttackType, Channel, Finding, ScanResult, Segment, Source, Trust, Verdict
+from .guard import FirewallGuard
+from .core.models import Channel, ScanResult, Source, Trust, Verdict
 from .pipeline import Firewall
 
-__all__ = ["Firewall", "FirewallGuard", "GuardDecision", "Session", "AttackType", "Channel", "Finding",
-           "ScanResult", "Segment", "Source", "Trust", "Verdict"]
+__all__ = ["Channel", "Firewall", "FirewallGuard", "ScanResult", "Session", "Source", "Trust", "Verdict"]

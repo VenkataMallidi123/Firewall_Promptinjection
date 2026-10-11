@@ -18,6 +18,8 @@ from fastapi.responses import FileResponse  # noqa: E402
 from firewall import Firewall  # noqa: E402
 from interfaces.demo.web import runner  # noqa: E402
 
+__all__ = ["app"]
+
 MAX_UPLOAD = 10 * 1024 * 1024
 STATIC = Path(__file__).with_name("static")
 

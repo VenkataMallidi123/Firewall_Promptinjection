@@ -2,6 +2,6 @@
 
 router.py holds the table of which extractor handles which format."""
 from .base import detect_source
-from .router import EXTRACTORS, extract, get_extractor
+from .router import extract
 
-__all__ = ["EXTRACTORS", "detect_source", "extract", "get_extractor"]
+__all__ = ["detect_source", "extract"]

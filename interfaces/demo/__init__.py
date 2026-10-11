@@ -1,1 +1,3 @@
 """The agent demo: one simulated agent (agent/), two front-ends (cli/, web/)."""
+
+__all__: list[str] = []

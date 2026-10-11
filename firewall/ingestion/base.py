@@ -17,6 +17,8 @@ from typing import Callable
 from ..core.context import ScanContext
 from ..core.models import Segment, Source
 
+__all__ = ["Extractor", "as_bytes", "as_text", "detect_source", "extend_rebased", "extract_nested"]
+
 Extractor = Callable[[bytes | str, ScanContext], list[Segment]]
 
 

@@ -12,6 +12,8 @@ from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
 from .base import as_bytes
 
+__all__ = ["extract_docx"]
+
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 
 

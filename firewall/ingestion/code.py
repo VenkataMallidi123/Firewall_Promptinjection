@@ -9,6 +9,8 @@ from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
 from .base import as_text
 
+__all__ = ["extract_code"]
+
 # Code comments are read by every developer, so they count as VISIBLE (unlike HTML comments).
 PATTERNS: list[tuple[re.Pattern, Channel, str]] = [
     (re.compile(r'"""(.*?)"""|\'\'\'(.*?)\'\'\'', re.S), Channel.VISIBLE, "docstring"),

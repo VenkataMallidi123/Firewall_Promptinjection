@@ -26,6 +26,8 @@ from ..core.models import AttackType, Finding, Segment, Trust
 from ..normalization.unicode import match_views
 from .base import Detector, snippet
 
+__all__ = ["RuleDetector"]
+
 RULES_DIR = Path(__file__).with_name("rules")
 
 # Text just before a match that suggests the attack is being *discussed*, not issued.

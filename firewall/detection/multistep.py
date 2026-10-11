@@ -14,6 +14,8 @@ from ..core.models import AttackType, Finding, Segment
 from .base import Detector, snippet
 from .rule_detector import RuleDetector
 
+__all__ = ["MultiStepDetector"]
+
 FRAMING_TYPES = {AttackType.ROLE_CHANGE.value, AttackType.MULTI_STEP_JAILBREAK.value}
 
 
