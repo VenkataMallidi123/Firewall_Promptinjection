@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import re
 
-from bs4 import BeautifulSoup, Comment, NavigableString, Tag
+from bs4 import BeautifulSoup, Comment, Declaration, Doctype, NavigableString, ProcessingInstruction, Tag
 
 from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
@@ -94,6 +94,8 @@ def extract_html_segments(html: str, location: str = "html") -> list[Segment]:
             if text:
                 segments.append(Segment(text=text, channel=Channel.COMMENT, location=f"{location}:comment", emit=False))
             continue
+        if isinstance(node, (Doctype, Declaration, ProcessingInstruction)):
+            continue  # e.g. <!DOCTYPE html>: markup, not text
         if not isinstance(node, NavigableString):
             continue
         parent = node.parent

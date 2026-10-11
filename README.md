@@ -5,22 +5,36 @@ Project created for ET Hackathon Unstop presented by Accenture
 
 Target tier: **D3 + F3**. It handles mixed multimodal input and detects 9 of the 9 attack types.
 
-## Quick start
+## Requirements
+
+- Python 3.14
+- Dependencies are pinned in [requirements.txt](requirements.txt): pydantic, pyyaml, beautifulsoup4, pypdf, python-docx, pillow, pytesseract, fastapi, uvicorn, python-multipart, and for tests: reportlab, pytest, httpx
+- Optional: [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) on PATH. Without it, the firewall still scans an image's metadata, but not the text drawn in its pixels.
+
+No API keys or environment variables are needed. Everything runs locally.
+
+## Installation and environment setup
 
 ```bash
+git clone https://github.com/VenkataMallidi123/Firewall_Promptinjection.git
+cd Firewall_Promptinjection
+
 python -m venv .venv
 .venv\Scripts\activate            # Windows  (source .venv/bin/activate on Linux/macOS)
 pip install -r requirements.txt
 
-python testing/samples/make_samples.py      # generate PDF/DOCX/EML/PNG/HTML/... test files
-python interfaces/demo/cli/run_demo.py      # agent demo, terminal: same attacks WITHOUT vs WITH the firewall
-python interfaces/demo/web/server.py        # agent demo, browser: http://localhost:8001
-python testing/evaluation/evaluate.py       # reliability report (precision/recall/FPR per type and source)
-pytest                                      # 98 passing tests (1 skipped without Tesseract)
-uvicorn interfaces.rest_api.main:app --reload   # REST API on http://localhost:8000/docs
+python testing/samples/make_samples.py      # generate the PDF/DOCX/EML/PNG/HTML/... test files
 ```
 
-Optional: install [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) and add it to PATH. Without it, the firewall still scans an image's metadata, but not the text drawn in its pixels.
+## Running
+
+```bash
+python interfaces/demo/cli/run_demo.py          # agent demo, terminal: same attacks WITHOUT vs WITH the firewall
+python interfaces/demo/web/server.py            # agent demo, browser: http://localhost:8001
+uvicorn interfaces.rest_api.main:app --reload   # REST API on http://localhost:8000 (Swagger UI at /docs)
+python testing/evaluation/evaluate.py           # reliability report (precision/recall/FPR per type and source)
+pytest                                          # 102 passing tests (1 skipped without Tesseract)
+```
 
 ## Use it from Python
 
@@ -37,7 +51,25 @@ r = fw.scan("Summarize this thread for me", source="user", session=Session())
 model_input = r.safe_text  # redacted + spotlighted text, or a block notice
 ```
 
-## How it works
+## API documentation
+
+Start the server with `uvicorn interfaces.rest_api.main:app --reload`. Interactive docs are at http://localhost:8000/docs.
+
+| Method | Endpoint | Body | Description |
+|---|---|---|---|
+| GET | `/health` | none | Status and list of active detectors |
+| POST | `/scan` | JSON: `content` (required), `source`, `trust`, `session_id`, `include_segments` | Scan text. Reuse the same `session_id` across chat turns to detect multi-turn attacks. |
+| POST | `/scan/file` | multipart form: `file` (required), `trust` (default `untrusted`), `include_segments` | Scan a file (PDF, DOCX, EML, HTML, MD, JSON, code, image) |
+
+Both scan endpoints return the verdict (allow / sanitize / block), risk score, findings with evidence and location, `detected_types`, and `safe_text` to pass to the model.
+
+```bash
+curl -X POST localhost:8000/scan -H "content-type: application/json" \
+     -d '{"content": "ignore previous instructions", "source": "user"}'
+curl -X POST localhost:8000/scan/file -F "file=@testing/samples/attacks/report_white_text.pdf"
+```
+
+## Architecture
 
 ```
 input ─► 1 INGESTION ─► 2 NORMALIZATION ─► 3 DETECTION ─► 4 DECISION ─► 5 ENFORCEMENT ─► safe_text + verdict
@@ -46,11 +78,15 @@ input ─► 1 INGESTION ─► 2 NORMALIZATION ─► 3 DETECTION ─► 4 DECI
          surfacing                          indirect     weighting
 ```
 
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) walks through each stage, the data model, and how to extend it with new rules, formats, or detectors.
+1. **Ingestion** ([firewall/ingestion/](firewall/ingestion/)): parses each format into text segments, surfaces hidden content (comments, white text, metadata) and tags where each segment came from.
+2. **Normalization** ([firewall/normalization/](firewall/normalization/)): Unicode NFKC, homoglyph folding, invisible-character removal, and Base64 / hex / ROT13 / URL decoding.
+3. **Detection** ([firewall/detection/](firewall/detection/)): YAML signature rules, a local ML classifier, session memory for multi-turn attacks, and indirect-injection checks.
+4. **Decision** ([firewall/decision/](firewall/decision/)): weights findings by source trust and channel into a risk score and an allow / sanitize / block verdict.
+5. **Enforcement** ([firewall/enforcement/](firewall/enforcement/)): redacts malicious spans, drops hidden content, spotlights untrusted data, or blocks.
+
+[firewall/pipeline.py](firewall/pipeline.py) wires the stages together, and every interface calls the firewall through [firewall/guard.py](firewall/guard.py). Thresholds and weights are in [firewall/core/config.yaml](firewall/core/config.yaml).
 
 ## Results
-
-The full report is in [docs/EVALUATION.md](docs/EVALUATION.md); regenerate it with `python testing/evaluation/evaluate.py --write`.
 
 | Dataset | Attacks / benign | Precision | Recall | False-positive rate |
 |---|---|---|---|---|
@@ -60,7 +96,7 @@ The full report is in [docs/EVALUATION.md](docs/EVALUATION.md); regenerate it wi
 
 Median scan latency is under 1 ms for text, and a few ms for documents.
 
-**Read the held-out row as the realistic estimate.** Its main weakness is paraphrased direct attacks that the rules don't anticipate. See *Known limitations* in the architecture doc.
+**Read the held-out row as the realistic estimate.** Its main weakness is paraphrased direct attacks that the rules don't anticipate.
 
 ## Agent demo
 
@@ -91,5 +127,5 @@ testing/                  how we prove it works
   tests/                  pytest suite
   evaluation/             evaluate.py + eval.jsonl (dev) + holdout.jsonl (test)
   samples/                make_samples.py + generated attack/benign files
-docs/                     ARCHITECTURE.md, EVALUATION.md, hackathon deck
+docs/                     hackathon deck
 ```

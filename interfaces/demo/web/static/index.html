@@ -186,7 +186,7 @@ function renderColumn(title, data, protectedRun) {
     : el("div", { class: "outcome good" },
         protectedRun ? "SAFE: no harmful action taken" : "No harmful action taken",
         protectedRun && data.prevented && data.prevented.length
-          ? el("div", { class: "prevented" }, "Prevented (this happened without the firewall):",
+          ? el("div", { class: "prevented" }, "Stopped by the firewall:",
               el("ul", {}, data.prevented.map(r => el("li", { text: r }))))
           : null));
   data.turns.forEach((t, i) => {

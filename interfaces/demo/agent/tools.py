@@ -8,7 +8,7 @@ from pathlib import Path
 __all__ = ["SAMPLES", "ToolBox", "ToolCall"]
 
 SAMPLES = Path(__file__).resolve().parents[3] / "testing" / "samples"
-DANGEROUS = {"send_email", "run_shell", "get_secret", "transfer_funds"}
+DANGEROUS = {"send_email", "run_shell", "run_sql", "get_secret", "transfer_funds"}
 
 
 @dataclass
@@ -57,6 +57,10 @@ class ToolBox:
     def run_shell(self, cmd: str) -> str:
         self.calls.append(ToolCall("run_shell", {"cmd": cmd}))
         return "ok"
+
+    def run_sql(self, query: str) -> str:
+        self.calls.append(ToolCall("run_sql", {"query": query}))
+        return "done"
 
     def get_secret(self, name: str) -> str:
         self.calls.append(ToolCall("get_secret", {"name": name}))
