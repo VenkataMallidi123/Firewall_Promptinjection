@@ -7,13 +7,12 @@ from email.parser import BytesParser
 
 from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
-from .base import as_bytes, extend_rebased, extract_nested, register
+from .base import as_bytes, extend_rebased, extract_nested
 from .html import extract_html_segments
 
 METADATA_HEADERS = {"reply-to", "comments", "keywords", "organization", "x-mailer"}
 
 
-@register(Source.EMAIL)
 def extract_email(data: bytes | str, ctx: ScanContext) -> list[Segment]:
     msg = BytesParser(policy=policy.default).parsebytes(as_bytes(data))
     subject = str(msg.get("subject", "") or "")

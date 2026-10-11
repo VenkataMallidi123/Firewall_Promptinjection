@@ -10,7 +10,7 @@ from docx.shared import RGBColor
 
 from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
-from .base import as_bytes, register
+from .base import as_bytes
 
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 
@@ -29,7 +29,6 @@ def _run_hidden_reason(run) -> str | None:
     return None
 
 
-@register(Source.DOCX)
 def extract_docx(data: bytes | str, ctx: ScanContext) -> list[Segment]:
     doc = Document(io.BytesIO(as_bytes(data)))
     lines: list[str] = []

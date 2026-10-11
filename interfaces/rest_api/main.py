@@ -1,20 +1,23 @@
-"""Thin REST wrapper so any agent (in any language) can call the firewall.
+"""REST API: lets any agent or application, in any language, call the firewall over HTTP.
 
     uvicorn interfaces.rest_api.main:app --reload
     curl -X POST localhost:8000/scan -H "content-type: application/json" \
          -d '{"content": "ignore previous instructions", "source": "user"}'
     curl -X POST localhost:8000/scan/file -F "file=@testing/samples/attacks/report_white_text.pdf"
+
+Like every interface, it checks content through FirewallGuard: one guard per session_id,
+so multi-turn attacks across a conversation are detected.
 """
 from __future__ import annotations
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from firewall import Firewall, Session, Source, Trust
+from firewall import Firewall, FirewallGuard, Source, Trust
 
 app = FastAPI(title="Prompt Injection Firewall", version="0.1.0")
-firewall = Firewall()
-sessions: dict[str, Session] = {}   # in-memory; use Redis or similar in production
+firewall = Firewall()                        # one pipeline, shared by every guard
+guards: dict[str, FirewallGuard] = {}        # one guard per session_id; in-memory (use Redis or similar in production)
 
 
 class ScanRequest(BaseModel):
@@ -23,6 +26,13 @@ class ScanRequest(BaseModel):
     trust: Trust | None = None
     session_id: str | None = None     # set for chat turns to enable multi-step detection
     include_segments: bool = False
+
+
+def _guard(session_id: str | None) -> FirewallGuard:
+    """The conversation's guard, or a one-off guard when no session is given."""
+    if session_id is None:
+        return FirewallGuard(firewall=firewall)
+    return guards.setdefault(session_id, FirewallGuard(firewall=firewall))
 
 
 def _response(result, include_segments: bool) -> dict:
@@ -38,9 +48,8 @@ def health() -> dict:
 
 @app.post("/scan")
 def scan(req: ScanRequest) -> dict:
-    session = sessions.setdefault(req.session_id, Session()) if req.session_id else None
-    result = firewall.scan(req.content, source=req.source, trust=req.trust, session=session)
-    return _response(result, req.include_segments)
+    decision = _guard(req.session_id).check(req.content, source=req.source, trust=req.trust)
+    return _response(decision.result, req.include_segments)
 
 
 @app.post("/scan/file")
@@ -49,5 +58,5 @@ async def scan_file(file: UploadFile = File(...), trust: Trust = Form(Trust.UNTR
     data = await file.read()
     if not data:
         raise HTTPException(400, "empty file")
-    result = firewall.scan(data, filename=file.filename, trust=trust)
-    return _response(result, include_segments)
+    decision = _guard(None).check(data, filename=file.filename, trust=trust, label=file.filename)
+    return _response(decision.result, include_segments)

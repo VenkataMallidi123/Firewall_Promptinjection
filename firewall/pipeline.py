@@ -1,10 +1,12 @@
-"""The Firewall: orchestrates the five stages.
+"""The Firewall: the only place that calls the five stages, in order.
 
     fw = Firewall()
     result = fw.scan(email_bytes, source="email")      # trust defaults to UNTRUSTED for data
     result = fw.scan("hi, summarise my inbox", source="user", session=session)
     if result.verdict is Verdict.BLOCK: ...
     model_input = result.safe_text
+
+Agents normally use FirewallGuard (firewall/guard.py) rather than calling scan() directly.
 """
 from __future__ import annotations
 
@@ -42,45 +44,64 @@ class Firewall:
         ]
         return [d for key, d in chain if d is not None and on.get(key, True)]
 
-    def scan(self, content: bytes | str, source: Source | str | None = None, trust: Trust | str | None = None,
-             filename: str | None = None, session: Session | None = None) -> ScanResult:
-        t0 = time.perf_counter()
+    def _context(self, content: bytes | str, source: Source | str | None, trust: Trust | str | None,
+                 filename: str | None, session: Session | None) -> ScanContext:
         src = Source(source) if source else detect_source(content, filename)
         tr = Trust(trust) if trust else (Trust.USER if src is Source.USER else Trust.UNTRUSTED)
-        ctx = ScanContext(source=src, trust=tr, config=self.config, filename=filename, session=session)
+        return ScanContext(source=src, trust=tr, config=self.config, filename=filename, session=session)
 
+    def _ingest(self, content: bytes | str, ctx: ScanContext) -> list[Segment]:
+        """Stage 1 with its safety limits. The only call into firewall.ingestion."""
         max_bytes = self.config["limits"]["max_input_bytes"]
         if len(content) > max_bytes:
             ctx.warnings.append(f"input truncated to {max_bytes} bytes")
             content = content[:max_bytes]
-
-        # 1. INGEST
         try:
             segments = extract(content, ctx)
         except Exception as exc:
             # Fail safe: if a parser chokes, still scan whatever text we can recover.
-            ctx.warnings.append(f"{src.value} extractor failed ({exc}); scanned as raw text")
+            ctx.warnings.append(f"{ctx.source.value} extractor failed ({exc}); scanned as raw text")
             segments = [Segment(text=as_text(content), channel=Channel.VISIBLE, location="raw")]
-        ctx.log(f"ingest: {len(segments)} segments from {src.value}")
+        ctx.log(f"ingestion: {len(segments)} segments from {ctx.source.value}")
+        return segments
 
-        # 2. NORMALIZE + DECODE
+    def read(self, content: bytes | str, source: Source | str | None = None,
+             filename: str | None = None) -> list[Segment]:
+        """Stage 1 only, with NO protection: every text layer, hidden ones included.
+
+        This is what an ordinary document loader hands a model. The demo uses it for
+        its "without firewall" run; real integrations should call scan() instead.
+        """
+        ctx = self._context(content, source, Trust.UNTRUSTED, filename, None)
+        return self._ingest(content, ctx)
+
+    def scan(self, content: bytes | str, source: Source | str | None = None, trust: Trust | str | None = None,
+             filename: str | None = None, session: Session | None = None) -> ScanResult:
+        t0 = time.perf_counter()
+        ctx = self._context(content, source, trust, filename, session)
+        src, tr = ctx.source, ctx.trust
+
+        # Stage 1. INGESTION
+        segments = self._ingest(content, ctx)
+
+        # Stage 2. NORMALIZATION
         segments = normalize_segments(segments, ctx)
         segments = expand_decoded(segments, ctx)
 
-        # 3. DETECT
+        # Stage 3. DETECTION
         findings = []
         for det in self.detectors:
             new = det.detect(segments, ctx, findings)
             findings.extend(new)
             ctx.log(f"detector {det.name}: {len(new)} findings")
 
-        # 4. POLICY
+        # Stage 4. DECISION
         verdict, risk, type_scores = score_findings(findings, segments, ctx)
         th = self.config["thresholds"]["combine_min"]
         types = [t for t, s in sorted(type_scores.items(), key=lambda kv: -kv[1]) if s >= th]
-        ctx.log(f"policy: risk={risk} verdict={verdict.value}")
+        ctx.log(f"decision: risk={risk} verdict={verdict.value}")
 
-        # 5. NEUTRALIZE
+        # Stage 5. ENFORCEMENT
         sanitized, safe = neutralize(segments, findings, verdict, ctx, types)
 
         if session is not None:

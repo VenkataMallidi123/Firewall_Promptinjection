@@ -9,7 +9,7 @@ from PIL import ExifTags, Image, ImageOps
 
 from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
-from .base import as_bytes, register
+from .base import as_bytes
 
 
 @lru_cache(maxsize=1)
@@ -34,7 +34,6 @@ def _ocr(img: Image.Image) -> str:
     return text if len(text.strip()) >= len(inverted.strip()) else inverted
 
 
-@register(Source.IMAGE)
 def extract_image(data: bytes | str, ctx: ScanContext) -> list[Segment]:
     img = Image.open(io.BytesIO(as_bytes(data)))
     img.load()

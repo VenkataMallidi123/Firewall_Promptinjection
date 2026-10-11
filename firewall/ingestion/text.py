@@ -3,14 +3,12 @@ from __future__ import annotations
 
 from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
-from .base import as_text, register
+from .base import as_text
 
 
-@register(Source.TEXT, Source.USER)
 def extract_text(data: bytes | str, ctx: ScanContext) -> list[Segment]:
     return [Segment(text=as_text(data), channel=Channel.VISIBLE, location=ctx.source.value)]
 
 
-@register(Source.OCR_TEXT)
 def extract_ocr_text(data: bytes | str, ctx: ScanContext) -> list[Segment]:
     return [Segment(text=as_text(data), channel=Channel.OCR, location="ocr")]

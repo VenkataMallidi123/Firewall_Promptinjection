@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup, Comment, NavigableString, Tag
 
 from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
-from .base import as_text, register
+from .base import as_text
 
 HIDDEN_STYLE = re.compile(
     r"display\s*:\s*none"
@@ -133,6 +133,5 @@ def extract_html_segments(html: str, location: str = "html") -> list[Segment]:
     return [Segment(text=body, channel=Channel.VISIBLE, location=location)] + segments
 
 
-@register(Source.HTML)
 def extract_html(data: bytes | str, ctx: ScanContext) -> list[Segment]:
     return extract_html_segments(as_text(data))

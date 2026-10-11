@@ -1,20 +1,22 @@
-"""Web interface for the agent demo (separate from the firewall's own REST API).
+"""Agent demo, web front-end: the browser page for the demo (separate from the REST API).
 
-    python interfaces/demo_ui/server.py          # then open http://localhost:8001
-    uvicorn interfaces.demo_ui.server:app --port 8001 --reload
+    python interfaces/demo/web/server.py          # then open http://localhost:8001
+    uvicorn interfaces.demo.web.server:app --port 8001 --reload
 """
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
 from fastapi.responses import FileResponse  # noqa: E402
 
-import runner  # noqa: E402
 from firewall import Firewall  # noqa: E402
+from interfaces.demo.web import runner  # noqa: E402
 
 MAX_UPLOAD = 10 * 1024 * 1024
 STATIC = Path(__file__).with_name("static")

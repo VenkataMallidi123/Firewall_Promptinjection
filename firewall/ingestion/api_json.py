@@ -7,11 +7,10 @@ import json
 
 from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
-from .base import as_text, register
+from .base import as_text
 from .text import extract_text
 
 
-@register(Source.API_JSON)
 def extract_json(data: bytes | str, ctx: ScanContext) -> list[Segment]:
     raw = as_text(data)
     try:

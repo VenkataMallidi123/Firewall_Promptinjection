@@ -6,7 +6,7 @@ import re
 
 from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
-from .base import as_text, register
+from .base import as_text
 from .html import extract_html_segments
 
 HTML_COMMENT = re.compile(r"<!--(.*?)-->", re.S)
@@ -16,7 +16,6 @@ LINK_TITLE = re.compile(r"\]\([^)\s]+\s+\"([^\"]{3,})\"\)")
 INLINE_HTML = re.compile(r"<[a-zA-Z][^>]*>")
 
 
-@register(Source.MARKDOWN)
 def extract_markdown(data: bytes | str, ctx: ScanContext) -> list[Segment]:
     text = as_text(data)
     hidden: list[Segment] = []

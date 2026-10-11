@@ -7,7 +7,7 @@ import re
 
 from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
-from .base import as_text, register
+from .base import as_text
 
 # Code comments are read by every developer, so they count as VISIBLE (unlike HTML comments).
 PATTERNS: list[tuple[re.Pattern, Channel, str]] = [
@@ -18,7 +18,6 @@ PATTERNS: list[tuple[re.Pattern, Channel, str]] = [
 ]
 
 
-@register(Source.CODE)
 def extract_code(data: bytes | str, ctx: ScanContext) -> list[Segment]:
     code = as_text(data)
     root = Segment(text=code, channel=Channel.VISIBLE, location="code", scan=False)

@@ -45,7 +45,7 @@ The code follows the diagram directly: [firewall/pipeline.py](../firewall/pipeli
 
 ## Stage 1: Ingestion ([firewall/ingestion/](../firewall/ingestion/))
 
-Indirect prompt injection works because humans and models see different things. A reviewer sees a clean web page; the model also receives the `display:none` div. So each extractor's main job is to **separate what a human sees from what a machine sees**:
+Indirect prompt injection works because humans and models see different things. A reviewer sees a clean web page; the model also receives the `display:none` div. Which extractor handles which format is listed in one table, `EXTRACTORS` in [router.py](../firewall/ingestion/router.py). So each extractor's main job is to **separate what a human sees from what a machine sees**:
 
 | Source | Visible | Surfaced as non-visible channels |
 |---|---|---|
@@ -113,6 +113,18 @@ All of these knobs live in [firewall/core/config.yaml](../firewall/core/config.y
 
 ## Integrating with an agent ([firewall/guard.py](../firewall/guard.py))
 
+Every interface uses the same route, so there is one way in and one way through:
+
+```
+interfaces/rest_api  ─┐
+interfaces/demo/cli  ─┼─► FirewallGuard (guard.py) ─► Firewall.scan() (pipeline.py) ─► stages 1 → 5
+interfaces/demo/web  ─┘
+```
+
+`Firewall.scan()` is the only code that calls the stages, and it calls stage 1 through a single
+helper. `Firewall.read()` runs stage 1 alone with no protection; the demo uses it to show what an
+unprotected agent would read.
+
 ```python
 from firewall import FirewallGuard
 guard = FirewallGuard()                                 # holds a Session for multi-turn detection
@@ -125,14 +137,14 @@ obs = guard.check_tool_output(raw, filename=name)       # indirect injection
 llm_context.append(obs.text)                            # redacted + spotlighted, or a block notice
 ```
 
-Agents written in other languages can call the REST API instead ([interfaces/rest_api/main.py](../interfaces/rest_api/main.py)): `POST /scan` and `POST /scan/file`.
+Agents written in other languages can call the REST API instead ([interfaces/rest_api/main.py](../interfaces/rest_api/main.py)): `POST /scan` and `POST /scan/file`. It keeps one guard per `session_id`, so multi-turn detection works over HTTP too.
 
 ## Extending the template
 
 | You want to… | Do this |
 |---|---|
 | Catch a new phrasing | Add a rule to the right `firewall/detection/rules/*.yaml` file, then add a test case and an eval row |
-| Support a new format (e.g. PPTX, XLSX) | Write `@register(Source.X) def extract_x(data, ctx) -> list[Segment]` in `firewall/ingestion/`, import it in `firewall/ingestion/__init__.py`, and add the extension to `EXTENSIONS` |
+| Support a new format (e.g. PPTX, XLSX) | Write `extract_x(data, ctx) -> list[Segment]` in a new module in `firewall/ingestion/`, add one line to the `EXTRACTORS` table in `firewall/ingestion/router.py`, and add the file extension to `EXTENSIONS` in `base.py` |
 | Add a new detection technique | Subclass `Detector`, implement `detect()`, and add it to `Firewall._build_detectors()` |
 | Use a stronger model | Replace `MLDetector` internals (for example, a local DeBERTa prompt-injection classifier) and keep the `detect()` contract |
 | Tune strictness | Edit `config.yaml` thresholds or weights, then run `testing/evaluation/evaluate.py` to see the trade-off |

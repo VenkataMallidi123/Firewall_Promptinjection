@@ -61,7 +61,7 @@ def test_api_file_upload(client, samples):
 
 
 def test_agent_demo_runs():
-    out = subprocess.run([sys.executable, str(ROOT / "interfaces" / "agent_demo" / "run_demo.py")], capture_output=True,
+    out = subprocess.run([sys.executable, str(ROOT / "interfaces" / "demo" / "cli" / "run_demo.py")], capture_output=True,
                          text=True, encoding="utf-8", timeout=120)
     assert out.returncode == 0, out.stderr
     blocks = out.stdout.split("Scenario ")[1:]

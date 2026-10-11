@@ -1,12 +1,11 @@
-"""Stage 1 - INGEST.
+"""Stage 1 - INGESTION: shared helpers for the extractors.
 
 An *extractor* turns raw content (bytes or str) into a list of Segments, each tagged
 with the channel it was carried in (visible text, hidden text, comment, metadata...).
 Surfacing *non-visible* channels is what makes indirect injection detectable: the
 attacker hides instructions where a human reviewer will not look.
 
-To support a new input type: write `def extract_x(data, ctx) -> list[Segment]`,
-decorate it with `@register(Source.X)`, and import the module in ingest/__init__.py.
+Which extractor handles which format is listed in one place: router.py (EXTRACTORS).
 """
 from __future__ import annotations
 
@@ -19,15 +18,6 @@ from ..core.context import ScanContext
 from ..core.models import Segment, Source
 
 Extractor = Callable[[bytes | str, ScanContext], list[Segment]]
-_REGISTRY: dict[Source, Extractor] = {}
-
-
-def register(*sources: Source):
-    def deco(fn: Extractor) -> Extractor:
-        for s in sources:
-            _REGISTRY[s] = fn
-        return fn
-    return deco
 
 
 EXTENSIONS: dict[str, Source] = {
@@ -89,14 +79,6 @@ def detect_source(data: bytes | str, filename: str | None = None) -> Source:
     return Source.TEXT
 
 
-def get_extractor(source: Source) -> Extractor:
-    return _REGISTRY.get(source) or _REGISTRY[Source.TEXT]
-
-
-def extract(data: bytes | str, ctx: ScanContext) -> list[Segment]:
-    return get_extractor(ctx.source)(data, ctx)
-
-
 def extend_rebased(out: list[Segment], segs: list[Segment]) -> None:
     """Append segments produced by another extractor, fixing their parent indices."""
     offset = len(out)
@@ -108,6 +90,7 @@ def extend_rebased(out: list[Segment], segs: list[Segment]) -> None:
 
 def extract_nested(data: bytes | str, filename: str | None, ctx: ScanContext, prefix: str) -> list[Segment]:
     """Extract an embedded object (e.g. an email attachment) with recursion limits."""
+    from .router import get_extractor  # imported here: router imports the extractors, which import this file
     limit = ctx.config["limits"]["max_recursion"]
     if ctx.recursion >= limit:
         ctx.warnings.append(f"recursion limit reached at {prefix}")

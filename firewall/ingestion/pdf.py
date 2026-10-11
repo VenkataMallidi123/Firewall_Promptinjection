@@ -8,7 +8,7 @@ from pypdf import PdfReader
 
 from ..core.context import ScanContext
 from ..core.models import Channel, Segment, Source
-from .base import as_bytes, register
+from .base import as_bytes
 
 
 def _hidden_text(page) -> list[str]:
@@ -44,7 +44,6 @@ def _hidden_text(page) -> list[str]:
     return hidden
 
 
-@register(Source.PDF)
 def extract_pdf(data: bytes | str, ctx: ScanContext) -> list[Segment]:
     reader = PdfReader(io.BytesIO(as_bytes(data)))
     if reader.is_encrypted:

@@ -13,8 +13,8 @@ python -m venv .venv
 pip install -r requirements.txt
 
 python testing/samples/make_samples.py      # generate PDF/DOCX/EML/PNG/HTML/... test files
-python interfaces/agent_demo/run_demo.py    # agent demo: same attacks WITHOUT vs WITH the firewall
-python interfaces/demo_ui/server.py         # agent demo web UI on http://localhost:8001
+python interfaces/demo/cli/run_demo.py      # agent demo, terminal: same attacks WITHOUT vs WITH the firewall
+python interfaces/demo/web/server.py        # agent demo, browser: http://localhost:8001
 python testing/evaluation/evaluate.py       # reliability report (precision/recall/FPR per type and source)
 pytest                                      # 98 passing tests (1 skipped without Tesseract)
 uvicorn interfaces.rest_api.main:app --reload   # REST API on http://localhost:8000/docs
@@ -64,7 +64,7 @@ Median scan latency is under 1 ms for text, and a few ms for documents.
 
 ## Agent demo
 
-[interfaces/agent_demo/run_demo.py](interfaces/agent_demo/run_demo.py) runs a deliberately gullible agent against seven scenarios: hidden email HTML, an invisible web-page div, white text in a PDF, a poisoned API response with base64, a DAN jailbreak, multi-turn payload splitting, and a benign email.
+The demo runs one deliberately gullible agent ([interfaces/demo/agent/](interfaces/demo/agent/)) with two front-ends: [demo/cli](interfaces/demo/cli/run_demo.py) in the terminal and [demo/web](interfaces/demo/web/server.py) in the browser. The terminal version runs seven scenarios: hidden email HTML, an invisible web-page div, white text in a PDF, a poisoned API response with base64, a DAN jailbreak, multi-turn payload splitting, and a benign email.
 
 - **Without the firewall**, the agent leaks its system prompt and secrets, emails the inbox to the attacker, and phishes the user (6 of 6 attack scenarios compromised).
 - **With the firewall**, all 6 are safe, and the benign email passes through unchanged.
@@ -80,11 +80,13 @@ firewall/                 the product: the 5-stage pipeline
   decision/       stage 4 risk scoring and verdict
   enforcement/    stage 5 redaction, isolation and spotlighting
   pipeline.py             wires stages 1 → 5
-  guard.py                agent integration entry point
-interfaces/               how people use it
-  rest_api/               FastAPI wrapper (POST /scan, POST /scan/file)
-  agent_demo/             mock tools + naive agent + side-by-side runner
-  demo_ui/                web UI for the agent demo
+  guard.py                the front door: every interface checks content through FirewallGuard
+interfaces/               how people use it (all go through guard.py)
+  rest_api/               REST API service for real integrations (POST /scan, POST /scan/file)
+  demo/                   the agent demo
+    agent/                the simulated agent, mock tools and scenarios (shared)
+    cli/                  terminal front-end
+    web/                  browser front-end
 testing/                  how we prove it works
   tests/                  pytest suite
   evaluation/             evaluate.py + eval.jsonl (dev) + holdout.jsonl (test)

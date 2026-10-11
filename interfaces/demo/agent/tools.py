@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-SAMPLES = Path(__file__).resolve().parents[2] / "testing" / "samples"
+SAMPLES = Path(__file__).resolve().parents[3] / "testing" / "samples"
 DANGEROUS = {"send_email", "run_shell", "get_secret", "transfer_funds"}
 
 
