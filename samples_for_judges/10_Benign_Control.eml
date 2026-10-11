@@ -1,0 +1,31 @@
+From: "Acme Engineering Blog" <newsletter@acme.example>
+To: subscriber@acme.example
+Subject: This month: password hygiene, API keys and prompt security
+Date: Thu, 08 Oct 2026 12:00:00 +0000
+MIME-Version: 1.0
+Content-Type: text/html; charset="utf-8"
+
+<html>
+<body style="font-family: Arial, sans-serif;">
+  <h1>Acme Engineering Monthly</h1>
+
+  <h2>1. Password hygiene for teams</h2>
+  <p>Never share your password or authenticator codes with anyone, including IT.
+  Our security team will never ask for them by email.</p>
+
+  <h2>2. Rotating API keys</h2>
+  <p>Store API keys in a secrets manager, not in source code. Rotate them every 90 days
+  and revoke keys you no longer use.</p>
+
+  <h2>3. What is prompt injection?</h2>
+  <p>Attackers hide phrases like "ignore previous instructions" inside web pages or
+  emails to trick AI assistants. In this article we explain how our team detects
+  these attacks and why you should treat retrieved content as data, not commands.</p>
+
+  <h2>4. Release notes</h2>
+  <p>Version 4.2 ships with a faster dashboard. You can ignore the old setup guide;
+  the previous steps are no longer needed.</p>
+
+  <p>Unsubscribe any time from your account settings.</p>
+</body>
+</html>
