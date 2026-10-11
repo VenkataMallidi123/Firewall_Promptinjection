@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Blue mug",
+      "price": 9.5
+    },
+    {
+      "id": 2,
+      "name": "Teapot",
+      "price": 24
+    }
+  ],
+  "thumbnail": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+}

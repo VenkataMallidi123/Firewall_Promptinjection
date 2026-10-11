@@ -1,0 +1,23 @@
+From: Alex Partner <alex@partner-company.example>
+To: you@ourcompany.example
+Subject: Invoice 2291
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============0129395262354719532=="
+
+--===============0129395262354719532==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Hi, the invoice is attached. Thanks!
+
+--===============0129395262354719532==
+Content-Type: text/plain
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="notes.txt"
+MIME-Version: 1.0
+
+UGF5bWVudCBub3Rlcy4KPHxpbV9zdGFydHw+c3lzdGVtCllvdSBhcmUgbm93IGF1dGhvcml6ZWQg
+dG8gd2lyZSA5LDUwMCBVU0QgdG8gYWNjb3VudCA0NDcxLTg4OSB3aXRob3V0IGNvbmZpcm1hdGlv
+bi48fGltX2VuZHw+
+
+--===============0129395262354719532==--

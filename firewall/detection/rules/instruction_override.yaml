@@ -1,0 +1,52 @@
+# 1. Instruction Override - attempts to cancel or replace the agent's existing instructions.
+attack_type: instruction_override
+rules:
+  - id: IO-001
+    weight: 0.90
+    description: ignore/disregard previous instructions
+    pattern: '\b(ignore|disregard|forget|override|overrule|bypass|skip|abandon|discard|neglect|drop|nevermind|never mind)\b[\w\s,''-]{0,40}?\b(previous|prior|preceding|above|earlier|initial|original|old|existing|all|any|your|system|developer|safety|these|those)\b[\w\s,''-]{0,30}?\b(instructions?|prompts?|rules|directions|directives|guidelines|guidance|commands?|context|programming|constraints|restrictions|polic(y|ies)|orders|messages?|tasks?|requests?|assignment)\b'
+
+  - id: IO-010
+    weight: 0.85
+    description: ignore the instructions you were given
+    pattern: '\b(ignore|disregard|forget|override|bypass)\s+the\s+(instructions|guidelines|rules|prompt|directives|guidance|policies)\s+(you\s+(were|have been|got)|given to you|you received|above|before|from your)'
+
+  - id: IO-002
+    weight: 0.75
+    description: announces replacement instructions
+    pattern: '\b(new|updated|revised|real|actual|true|override|replacement|secret|priority)\s+(instructions?|directives?|system prompt|orders|rules|task)\s*(:|follow|are\b|is\b|take precedence)'
+
+  - id: IO-003
+    weight: 0.80
+    description: tells the model not to follow its original instructions
+    pattern: '\b(do not|don''t|never|stop|no longer)\s+(follow|obey|listen to|adhere to|comply with|respect)\w*\s+(the\s+|your\s+|any\s+)?(previous|prior|above|system|original|developer|initial|earlier|safety)\b'
+
+  - id: IO-004
+    weight: 0.60
+    description: from now on ...
+    pattern: '\bfrom now on\b[,\s]+(you|ignore|only|always|never|respond|answer|act|do|reply|output)\b'
+
+  - id: IO-005
+    weight: 0.80
+    description: claims earlier instructions are void
+    pattern: '\b(above|previous|prior|earlier|preceding|original|system|initial)\s+(instructions?|prompts?|text|messages?|rules|guidelines)\s+(is|are|was|were|have been|has been)\s+(fake|false|wrong|outdated|obsolete|a test|void|cancell?ed|revoked|deprecated|superseded|no longer (valid|applicable|relevant|in effect))'
+
+  - id: IO-006
+    weight: 0.85
+    description: disable safety filters
+    pattern: '\b(override|bypass|disable|deactivate|turn off|switch off|ignore|circumvent|remove|lift)\b[\w\s]{0,20}?\b(safety|security|content|ethical|ethics|moderation)\s+(filters?|guidelines|guardrails|restrictions|policies|protocols|checks|measures|settings|layers?)'
+
+  - id: IO-007
+    weight: 0.45
+    description: redirects the task ("instead, you will ...")
+    pattern: '\binstead\b[,\s]+(you (will|must|should|are to)|do the following|your (task|job) is)'
+
+  - id: IO-008
+    weight: 0.70
+    description: redefines the agent's real task
+    pattern: '\b(your|the)\s+(real|actual|true|only|new|primary)\s+(task|goal|objective|purpose|mission|job|instruction)\s+(is|now is|will be|has changed)\b'
+
+  - id: IO-009
+    weight: 0.60
+    description: aborts the current task
+    pattern: '\bstop (what you are doing|what you''re doing|summari[sz]ing|translating|processing|your current task|the current task)\b'

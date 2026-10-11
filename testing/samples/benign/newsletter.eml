@@ -1,0 +1,22 @@
+From: Alex Partner <alex@partner-company.example>
+To: you@ourcompany.example
+Subject: Weekly digest
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============7625924339539621841=="
+
+--===============7625924339539621841==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+This week: five tips for better sleep and a lentil soup recipe.
+
+--===============7625924339539621841==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<html><body><p>This week: five tips for better sleep and a lentil soup recipe=
+.</p><!-- tracking --></body></html>
+
+--===============7625924339539621841==--

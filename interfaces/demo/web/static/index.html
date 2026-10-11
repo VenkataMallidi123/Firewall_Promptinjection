@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firewall Agent Demo</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1b1f24; --muted: #5b6573; --border: #dde1e7;
+    --accent: #2f5bea; --accent-text: #ffffff;
+    --bad: #c62828; --bad-bg: #fdecec; --good: #1e7d3a; --good-bg: #e7f5ea;
+    --warn: #a15c00; --warn-bg: #fff3e0; --user-bg: #eef2fd; --agent-bg: #f1f3f6; --code-bg: #f4f5f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --panel: #1a1e24; --text: #e6e9ee; --muted: #9aa4b2; --border: #2c323b;
+      --accent: #6d8dff; --accent-text: #0d1117;
+      --bad: #ff6b6b; --bad-bg: #3a1d1f; --good: #5fd383; --good-bg: #183224;
+      --warn: #ffb54d; --warn-bg: #3a2c17; --user-bg: #1f2840; --agent-bg: #232830; --code-bg: #14171c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--panel); }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 2px 0 0; color: var(--muted); }
+  .layout { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 70px); }
+  aside { border-right: 1px solid var(--border); background: var(--panel); padding: 16px; overflow-y: auto; }
+  aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 8px 0; }
+  .scenario { display: block; width: 100%; text-align: left; padding: 8px 10px; margin-bottom: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text); border-radius: 6px; cursor: pointer; font: inherit; }
+  .scenario:hover { border-color: var(--accent); }
+  .scenario.active { border-color: var(--accent); background: var(--user-bg); }
+  .scenario small { display: block; color: var(--muted); }
+  .group { font-size: 12px; font-weight: 600; color: var(--text); margin: 14px 0 6px; }
+  .group:first-child { margin-top: 0; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  textarea, select, input[type=file] { width: 100%; font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
+  textarea { min-height: 110px; resize: vertical; }
+  .btn { margin-top: 12px; width: 100%; padding: 9px; border: 0; border-radius: 6px; background: var(--accent);
+    color: var(--accent-text); font: inherit; font-weight: 600; cursor: pointer; }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  main { padding: 20px 24px; overflow-x: hidden; }
+  .empty { color: var(--muted); padding: 40px 0; text-align: center; }
+  .title { font-size: 17px; font-weight: 600; margin: 0 0 14px; }
+  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .col { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; min-width: 0; }
+  .col h3 { margin: 0 0 10px; font-size: 15px; }
+  .outcome { padding: 10px 12px; border-radius: 8px; font-weight: 600; margin-bottom: 12px; }
+  .outcome ul { margin: 6px 0 0; padding-left: 18px; font-weight: 400; }
+  .outcome.bad { background: var(--bad-bg); color: var(--bad); }
+  .outcome.good { background: var(--good-bg); color: var(--good); }
+  .bubble { padding: 8px 12px; border-radius: 8px; margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .bubble .who { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 2px; }
+  .user { background: var(--user-bg); }
+  .agent { background: var(--agent-bg); }
+  .scan { border: 1px solid var(--border); border-left-width: 4px; border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
+  .scan.allow { border-left-color: var(--good); }
+  .scan.sanitize { border-left-color: var(--warn); }
+  .scan.block { border-left-color: var(--bad); }
+  .scan-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .pill { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+  .pill.allow { background: var(--good-bg); color: var(--good); }
+  .pill.sanitize { background: var(--warn-bg); color: var(--warn); }
+  .pill.block { background: var(--bad-bg); color: var(--bad); }
+  .chip { font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .meter { height: 6px; background: var(--border); border-radius: 3px; margin: 6px 0; overflow: hidden; }
+  .meter > div { height: 100%; }
+  .prevented { font-weight: 400; margin-top: 6px; font-size: 13px; }
+  .prevented ul { margin: 4px 0 0; padding-left: 18px; }
+  .analysis { margin: 8px 0 4px; padding: 8px 10px; border-radius: 6px; background: var(--agent-bg); }
+  .analysis-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+  .analysis dl { display: grid; grid-template-columns: 130px 1fr; gap: 4px 10px; margin: 0; font-size: 13px; }
+  .analysis dt { color: var(--muted); font-weight: 600; }
+  .analysis dd { margin: 0; overflow-wrap: anywhere; }
+  .analysis ul { margin: 0; padding-left: 16px; }
+  .analysis code { font-size: 12px; background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
+  @media (max-width: 600px) { .analysis dl { grid-template-columns: 1fr; } .analysis dd { margin-bottom: 4px; } }
+  details { margin-top: 6px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; table-layout: fixed; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
+  th { color: var(--muted); font-weight: 600; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: 12px;
+    white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow-y: auto; margin: 6px 0 0; }
+  .calls { margin: 8px 0; padding: 0; list-style: none; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .calls li { padding: 4px 8px; border-radius: 6px; margin-bottom: 4px; background: var(--agent-bg); overflow-wrap: anywhere; }
+  .calls li.danger { background: var(--bad-bg); color: var(--bad); font-weight: 600; }
+  .turn-sep { border: 0; border-top: 1px dashed var(--border); margin: 14px 0; }
+  .error { color: var(--bad); margin-top: 8px; font-size: 13px; }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { border-right: 0; border-bottom: 1px solid var(--border); }
+    .columns { grid-template-columns: 1fr; }
+    main, header { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Prompt Injection Firewall: agent demo</h1>
+  <p>The same gullible agent runs twice, once with no protection and once with the firewall between it and everything it reads.</p>
+</header>
+<div class="layout">
+  <aside>
+    <h2>Scenarios</h2>
+    <div id="scenarios">Loading...</div>
+
+    <h2 style="margin-top:22px">Custom run</h2>
+    <label for="msg">Your message(s): put a line with only <code>---</code> between turns</label>
+    <textarea id="msg">Summarize this document for me</textarea>
+    <label for="sample">Content the agent's tool returns</label>
+    <select id="sample"><option value="">(none: chat only)</option></select>
+    <label for="file">...or upload your own file</label>
+    <input type="file" id="file">
+    <div class="hint">PDF, DOCX, EML, HTML, MD, JSON, code, TXT or images. Max 10 MB.</div>
+    <button class="btn" id="runCustom">Run custom</button>
+    <div class="error" id="err"></div>
+  </aside>
+  <main id="main"><div class="empty">Pick a scenario on the left, or run your own message and file.</div></main>
+</div>
+
+<script>
+const $ = (sel) => document.querySelector(sel);
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") node.className = v;
+    else if (k === "text") node.textContent = v;
+    else node.setAttribute(k, v);
+  }
+  for (const c of children.flat()) if (c != null) node.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  return node;
+}
+
+function verdictColor(v) { return v === "block" ? "var(--bad)" : v === "sanitize" ? "var(--warn)" : "var(--good)"; }
+
+function renderAnalysis(a) {
+  const row = (label, ...value) => [el("dt", { text: label }), el("dd", {}, ...value)];
+  return el("div", { class: "analysis" },
+    el("div", { class: "analysis-title", text: "Attack analysis" }),
+    el("dl", {},
+      row("Initiated by", a.origin),
+      row("Method", el("ul", {}, a.methods.map(m => el("li", {}, el("strong", { text: m.name }), ": " + m.what)))),
+      row("Hidden in", a.hidden_in.join(", ")),
+      row("Aimed at the AI?", a.aimed_at_ai),
+      row("Key evidence", el("code", { text: a.key_evidence })),
+      row("Firewall action", a.action)));
+}
+
+function renderScan(s) {
+  const head = el("div", { class: "scan-head" },
+    el("span", { class: `pill ${s.verdict}`, text: s.verdict }),
+    el("strong", { text: `Firewall: ${s.label}` }),
+    el("span", { class: "chip", text: `risk ${s.risk.toFixed(2)}` }),
+    el("span", { class: "chip", text: `${s.elapsed_ms} ms` }),
+    ...s.types.map(t => el("span", { class: "chip", text: t.replaceAll("_", " ") })));
+  const meter = el("div", { class: "meter" }, el("div", { style: `width:${Math.round(s.risk * 100)}%;background:${verdictColor(s.verdict)}` }));
+  const box = el("div", { class: `scan ${s.verdict}` }, head, meter);
+  if (s.analysis) box.append(renderAnalysis(s.analysis));
+  if (s.hidden_segments) box.append(el("div", { class: "hint", text: `${s.hidden_segments} non-visible segment(s) surfaced (hidden text, comments, metadata, decoded payloads)` }));
+  if (s.findings.length) {
+    const rows = s.findings.map(f => el("tr", {},
+      el("td", { text: f.type.replaceAll("_", " ") }),
+      el("td", { text: `${f.rule} (${f.detector})` }),
+      el("td", { text: f.score.toFixed(2) }),
+      el("td", { text: `${f.channel} @ ${f.location}` }),
+      el("td", { text: f.evidence })));
+    box.append(el("details", {}, el("summary", { text: `Show ${s.findings.length} finding(s)` }),
+      el("table", {}, el("colgroup", {}, el("col", { style: "width:17%" }), el("col", { style: "width:17%" }),
+        el("col", { style: "width:9%" }), el("col", { style: "width:22%" }), el("col", { style: "width:35%" })),
+        el("thead", {}, el("tr", {}, ...["Type", "Rule", "Score", "Where", "Evidence"].map(h => el("th", { text: h })))),
+        el("tbody", {}, rows))));
+  }
+  if (s.warnings.length) box.append(el("div", { class: "hint", text: "Note: " + s.warnings.join("; ") }));
+  return box;
+}
+
+function renderColumn(title, data, protectedRun) {
+  const col = el("section", { class: "col" }, el("h3", { text: title }));
+  col.append(data.compromised
+    ? el("div", { class: "outcome bad" }, "COMPROMISED", el("ul", {}, data.reasons.map(r => el("li", { text: r }))))
+    : el("div", { class: "outcome good" },
+        protectedRun ? "SAFE: no harmful action taken" : "No harmful action taken",
+        protectedRun && data.prevented && data.prevented.length
+          ? el("div", { class: "prevented" }, "Stopped by the firewall:",
+              el("ul", {}, data.prevented.map(r => el("li", { text: r }))))
+          : null));
+  data.turns.forEach((t, i) => {
+    if (i) col.append(el("hr", { class: "turn-sep" }));
+    col.append(el("div", { class: "bubble user" }, el("span", { class: "who", text: `User (turn ${i + 1})` }), t.user));
+    t.scans.forEach(s => col.append(renderScan(s)));
+    if (t.model_read != null) {
+      col.append(el("details", {}, el("summary", { text: protectedRun ? "What the model was allowed to read" : "What the model read (raw loader output, hidden text included)" }),
+        el("pre", { text: t.model_read })));
+    }
+    if (t.tool_calls.length) {
+      col.append(el("ul", { class: "calls" }, t.tool_calls.map(c =>
+        el("li", { class: c.dangerous ? "danger" : "" },
+          `${c.dangerous ? "!! " : ""}${c.name}(${Object.entries(c.args).map(([k, v]) => `${k}=${JSON.stringify(v.length > 60 ? v.slice(0, 60) + "..." : v)}`).join(", ")})`))));
+    }
+    col.append(el("div", { class: "bubble agent" }, el("span", { class: "who", text: "Agent reply" }), t.reply));
+  });
+  return col;
+}
+
+function render(title, data) {
+  const main = $("#main");
+  main.replaceChildren(
+    el("p", { class: "title", text: title }),
+    el("div", { class: "columns" }, renderColumn("Without firewall", data.without, false), renderColumn("With firewall", data.with, true)));
+}
+
+async function call(url, options) {
+  $("#err").textContent = "";
+  $("#main").replaceChildren(el("div", { class: "empty", text: "Running..." }));
+  const res = await fetch(url, options);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+  return body;
+}
+
+async function runScenario(s, btn) {
+  document.querySelectorAll(".scenario").forEach(b => b.classList.toggle("active", b === btn));
+  try { render(`${s.group}: ${s.title}`, await call(`/api/run/${s.id}`, { method: "POST" })); }
+  catch (e) { $("#main").replaceChildren(el("div", { class: "empty error", text: e.message })); }
+}
+
+async function runCustom() {
+  const btn = $("#runCustom");
+  const form = new FormData();
+  form.append("messages", $("#msg").value);
+  form.append("sample", $("#sample").value);
+  const f = $("#file").files[0];
+  if (f) form.append("file", f);
+  btn.disabled = true;
+  document.querySelectorAll(".scenario").forEach(b => b.classList.remove("active"));
+  try {
+    const label = f ? f.name : ($("#sample").value || "chat only");
+    render(`Custom run (${label})`, await call("/api/run-custom", { method: "POST", body: form }));
+  } catch (e) {
+    $("#err").textContent = e.message;
+    $("#main").replaceChildren(el("div", { class: "empty", text: "Run failed." }));
+  } finally { btn.disabled = false; }
+}
+
+async function init() {
+  const [scenarios, samples] = await Promise.all([fetch("/api/scenarios").then(r => r.json()), fetch("/api/samples").then(r => r.json())]);
+  const list = $("#scenarios");
+  list.replaceChildren();
+  let group = null;
+  for (const s of scenarios) {
+    if (s.group !== group) {
+      group = s.group;
+      list.append(el("div", { class: "group", text: group }));
+    }
+    const label = s.group === "By attack type" ? s.title : `${s.title}`;
+    const b = el("button", { class: "scenario" }, label, el("small", { text: s.files.join(", ") || "chat only" }));
+    b.addEventListener("click", () => runScenario(s, b));
+    list.append(b);
+  }
+  for (const [kind, files] of Object.entries(samples)) {
+    $("#sample").append(el("optgroup", { label: kind }, files.map(f => el("option", { value: `${kind}/${f}`, text: f }))));
+  }
+  $("#runCustom").addEventListener("click", runCustom);
+}
+init().catch(e => { $("#scenarios").textContent = "Could not load scenarios: " + e.message; });
+</script>
+</body>
+</html>
