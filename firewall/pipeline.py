@@ -15,7 +15,7 @@ from pathlib import Path
 
 from .core.config import load_config
 from .core.context import ScanContext, Session
-from .detection import (ContextPoisonDetector, Detector, EncodingDetector, IndirectDetector, MLDetector,
+from .detection import (Detector, EncodingDetector, FakeDialogueDetector, IndirectDetector, MLDetector,
                         MultiStepDetector, RuleDetector)
 from .ingestion import detect_source, extract
 from .ingestion.base import as_text
@@ -43,12 +43,12 @@ class Firewall:
     def _build_detection_chain(self) -> list[Detector]:
         """Create the stage 3 detectors in the order they run, skipping any disabled in config.
 
-        Order matters: content detectors first, then the ones that reason over their findings.
+        Order: rules, fake_dialogue, multistep, ml, encoding, indirect. Content detectors first, then the ones that reason over their findings.
         """
         on = self.config["detectors"]
         chain: list[tuple[str, Detector]] = [
             ("rules", self.rules),
-            ("context_poison", ContextPoisonDetector(self.config)),
+            ("fake_dialogue", FakeDialogueDetector(self.config)),
             ("multistep", MultiStepDetector(self.config, self.rules)),
             ("ml", MLDetector(self.config) if on.get("ml") else None),
             ("encoding", EncodingDetector(self.config)),

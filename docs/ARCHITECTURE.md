@@ -73,7 +73,7 @@ Detectors run in order, and each one sees the findings of those before it:
 | Detector | Attack types | How it works |
 |---|---|---|
 | `rules` | 1–8 | Weighted regexes in [rules/*.yaml](../firewall/detection/rules/), with one file per attack type. Two dampeners reduce false positives: **mention dampening** for quoted or "such as" examples, and **negation dampening** ("never share your password") |
-| `context_poison` | 6 | Forged multi-role transcripts ("User: … / Assistant: …") |
+| `fake_dialogue` | 6 | A fake chat history planted in content ("User: … / Assistant: …") |
 | `multistep` | 7 | Uses `Session` history. Payload splitting: rules re-run over the joined turns, flagging matches that cross the turn boundary. Escalation after a role-play framing turn. Repeated probing. |
 | `ml` | any | Pure-Python logistic regression (P(attack)) plus Naive Bayes (attack type) trained on `firewall/detection/data/train.jsonl`. It is capped at 0.7, so on its own it can SANITIZE but never BLOCK. |
 | `encoding` | 8 | Attacks found inside decoded segments, attacks found only after homoglyph or leet folding, tag smuggling, and obfuscation flags |

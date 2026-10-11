@@ -34,7 +34,7 @@ decoders:
 
 detectors:
   rules: true
-  context_poison: true
+  fake_dialogue: true
   multistep: true
   ml: true
   encoding: true
@@ -51,6 +51,7 @@ session:
 neutralize:
   spotlight_untrusted: true   # wrap untrusted data in data-only delimiters
   expand_to_sentence: true    # redact the whole sentence around a malicious match
+  emit_clean_metadata: true   # pass document metadata with no findings to the model, as a labelled block
 
 limits:
   max_input_bytes: 20000000

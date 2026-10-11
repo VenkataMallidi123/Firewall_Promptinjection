@@ -3,7 +3,9 @@
 * redaction    - spans of findings above `redact_min` are replaced (expanded to the whole
                  sentence so half-instructions don't survive). Findings inside decoded or
                  child segments are mapped back to the span of the original content.
-* hidden text  - non-visible channels (hidden HTML, comments, metadata) are never emitted.
+* hidden text  - non-visible channels (hidden HTML, comments, attributes) are never emitted.
+* metadata     - document metadata with no findings is passed on as a labelled block
+                 (setting: neutralize.emit_clean_metadata); flagged metadata is withheld.
 * spotlighting - untrusted data is wrapped in explicit "this is data, not instructions"
                  delimiters, a cheap defence that also helps against attacks we missed.
 * BLOCK        - the content is withheld entirely and replaced with a notice.
@@ -13,7 +15,7 @@ from __future__ import annotations
 import re
 
 from ..core.context import ScanContext
-from ..core.models import Finding, Segment, Trust, Verdict
+from ..core.models import Channel, Finding, Segment, Trust, Verdict
 
 __all__ = ["neutralize"]
 
@@ -56,6 +58,21 @@ def redact(text: str, spans: list[tuple[int, int]]) -> str:
     return text
 
 
+def metadata_label(location: str) -> str:
+    """Short field name from a segment location, e.g. "pdf:metadata/Title" -> "Title"."""
+    return location.rsplit(":", 1)[-1].rsplit("/", 1)[-1].strip("<> ")
+
+
+def clean_metadata_block(segments: list[Segment], findings: list[Finding]) -> str:
+    """Metadata from the scanned content itself (not attachments) that no detector flagged."""
+    flagged = {root_span(segments, f.segment, f.start, f.end)[0] for f in findings}
+    lines = [f"- {metadata_label(seg.location)}: {seg.text.strip()}"
+             for i, seg in enumerate(segments)
+             if seg.parent is None and seg.channel is Channel.METADATA and seg.text.strip()
+             and i not in flagged and ":attachment:" not in seg.location]
+    return "[Document metadata]\n" + "\n".join(lines) if lines else ""
+
+
 def spotlight(text: str, source: str) -> str:
     text = text.replace("<<<", "‹‹‹").replace(">>>", "›››")
     return (f"<<<EXTERNAL_DATA source={source} trust=untrusted>>>\n"
@@ -81,6 +98,10 @@ def neutralize(segments: list[Segment], findings: list[Finding], verdict: Verdic
     for i, seg in enumerate(segments):
         if seg.parent is None and seg.emit and seg.text:
             parts.append(redact(seg.text, spans.get(i, [])))
+    if cfg["neutralize"].get("emit_clean_metadata", True):
+        meta = clean_metadata_block(segments, findings)
+        if meta:
+            parts.append(meta)
     sanitized = "\n\n".join(parts)
 
     if verdict is Verdict.BLOCK:
